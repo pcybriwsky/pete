@@ -20,15 +20,29 @@ let running = false;
 
 const myP5Sketch = (p) => {
   p.setup = () => {
-    p.createCanvas(400, 400);
+    console.log(window.innerWidth);
+    p.createCanvas(window.innerWidth, 100);
     p.background(220);
+    x1 = 0
+    y1 = p.random(0, 100)
+    x2 = p.width
+    y2 = y1
+
+    if (window.innerWidth < 768) {
+      min = 1000;
+      max = 2000;
+    }
+    else{
+      min = 5000;
+      max = 6000;
+    }
 
     drawing = new InkLine(palette, null);
     drawing.setSplatter(0.98, 0.4, 1);
     drawing.setEndBubble(0.01);
     drawing.setAnalogueness(0.2, 4);
     drawing.setWeight(min, max)
-    drawing.setDrawFunction(4);
+    drawing.setDrawFunction(0);
     drawing.drawLine(x1, y1, x2, y2, max, p);
     p.clear();
   };
@@ -37,12 +51,12 @@ const myP5Sketch = (p) => {
   let watercolorVector = [];
   let poly = null;
   p.draw = () => {
-    if (!running) {
-      if (window.scrollY > 10) {
-        running = true;
-      }
-      return
-    }
+    // if (!running) {
+    //   if (window.scrollY >= 0) {
+    //     running = true;
+    //   }
+    //   return
+    // }
 
     p.angleMode(p.DEGREES);
     if (poly == null) {
@@ -59,7 +73,7 @@ const myP5Sketch = (p) => {
 
     if (i >= max) {
       p.angleMode(p.RADIANS);
-      poly.colorIn(palette[3], palette[4], layer, p);
+      // poly.colorIn(palette[3], palette[4], layer, p);
       layer += 10;
       if (layer > 25) {
         p.noLoop();

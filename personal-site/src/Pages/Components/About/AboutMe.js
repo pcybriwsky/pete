@@ -5,28 +5,37 @@ import FadeIn from 'react-fade-in/lib/FadeIn';
 
 const AboutMe = () => {
     return (
-        <FadeIn>
-        <div className='grid grid-cols-1 mx-auto laptop:grid-cols-2 w-[90%] laptop:w-[80%] text-center laptop:text-left'>
-            <div className='justify-center'>
-                <h2 className='text-2xl text-left'>Hi, I'm Pete</h2>
+        <div className='mx-auto items-center justify-center'>
+            <FadeIn>
 
-                <p className='text-2xl'>
-                    Nice to meet you! I’m Pete, and I’m a data artist.
-                </p>
-                
-                <p>
-                    On paper, I run a data art company, <span className='font-serif font-bold italic text-primary'><a href="https://ngenart.com">n-gen</a></span>. You should check it out.
-                </p>
+                <div className='grid grid-cols-1 my-auto mx-auto laptop:grid-cols-2 text-left h-[900px]'>
+                    <div className='justify-center mx-auto my-auto'>
 
-                <p>
-                    At heart, I’m a passionate runner, music listener, and tinkerer. My efforts to get creative with my own data led me to create a platform to empower others to do the same.
-                </p>
-            </div>
-            <div>
-                <img src="https://github.com/pcybriwsky/pete/blob/main/personal-site/src/Assets/Images/headshot.png" alt="Profile Picture" />
-            </div>
+                        <h2 className='text-4xl text-left font-serif font-bold italic my-[10px] text-primary'>Hi, I'm Pete</h2>
+
+                        <h1 className='my-[5px]'>
+                            On paper, I'm an entrepreneur building <span className='font-serif font-bold italic text-primary'><a href="https://ngenart.com">n-gen</a></span> at the intersection of art and data. You should check it out.
+                        </h1>
+
+                        <p className='my-[5px]'>
+                            In the past, I had studied computer science and have experience in product marketing and design.
+                        </p>
+
+                        <p className='my-[5px]'>
+                            At heart, I’m a passionate runner, music listener, and tinkerer. I love to build things and learn new skills. I'm currently trying to learn to draw alongside my generative art journey.
+                        </p>
+
+                        <p className='my-[5px]'>
+                            Follow me on <span className='font-serif font-bold italic text-primary'><a href="https://twitter.com/pete_cybriwsky">Twitter</a></span> or <span className='font-serif font-bold italic text-primary'><a href="https://www.instagram.com/peter_cybriwsky/">Instagram</a></span> to see what I'm up to or read some longer-form thoughts on <span className='font-serif font-bold italic text-primary'><a href="https://ngenart.substack.com/">Substack</a></span>. Feel free to give me a shout there or over <span className='font-serif font-bold italic text-primary'><a href="mailto:pete@ngenart.com">email</a></span> as well.
+                        </p>
+
+                    </div>
+                    <div className='mx-auto my-auto'>
+                        <img className="w-[300px] h-[300px] rounded-full shadow-2xl" src={require("../../../Assets/Images/headshot.png")} alt="Profile Picture" />
+                    </div>
+                </div>
+            </FadeIn>
         </div>
-        </FadeIn>
     );
 };
 
