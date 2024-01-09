@@ -5,6 +5,7 @@ import logo from './logo.svg';
 import './App.css';
 
 const Home = lazy(() => import("./Pages/Home"))
+const Footer = lazy(() => import("./Pages/Navs/Footer"))
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
       </Routes>
+      <Footer />
     </Suspense>
   );
 }
