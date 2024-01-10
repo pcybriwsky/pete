@@ -7,8 +7,6 @@ import ArtFeature from './ArtFeature';
 const AboutMe = () => {
     return (
         <div className='mx-auto'>
-            <FadeIn>
-
                 <div className='grid grid-cols-1 my-auto mx-auto laptop:text-left'>
                     <div className='my-auto'>
 
@@ -27,7 +25,6 @@ const AboutMe = () => {
                         <ArtFeature image={require("../../../Assets/Images/networking.png")} title="Networking in Section G" description="A piece for a friend representing his business school class. Each student is represented by their seat in class with the corresponding flag colors of their home country. The piece takes in a highlighted student, who is represented in the shape of a heart." />
                     </div>
                 </div>
-            </FadeIn>
         </div>
     );
 };
