@@ -18,6 +18,7 @@ module.exports = {
       accent: '#8c5e58',
       background: '#f5f5f5',
       text: '#404040',
+      alt: '#EAE0D5'
     },
     screens: {
       'tinyMobile': '280px',

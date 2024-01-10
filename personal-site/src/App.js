@@ -6,10 +6,12 @@ import './App.css';
 
 const Home = lazy(() => import("./Pages/Home"))
 const Footer = lazy(() => import("./Pages/Navs/Footer"))
+const Nav = lazy(() => import("./Pages/Navs/Nav"))
 
 function App() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
+      <Nav />
       <Routes>
         <Route path="/" element={<Home />} />
       </Routes>

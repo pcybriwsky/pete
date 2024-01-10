@@ -4,15 +4,46 @@ import { SiSubstack } from 'react-icons/si';
 import { BsFacebook, BsSubstack, BsTiktok } from "react-icons/bs";
 import { AiFillInstagram, AiFillTwitterCircle, AiFillLinkedin } from 'react-icons/ai';
 import { FaGithub, FaYoutube } from 'react-icons/fa';
-
+import Typewriter from 'typewriter-effect';
 
 
 const Footer = () => {
     return (
-        <div className='bg-text text-background mx-auto'>
-            <div className=''>
-                <p className='text-2xl items-center text-center'>Made with love</p>
-                <div className='grid grid-cols-3 laptop:grid-cols-6 py-[10px]'>
+        <div className='bg-text text-background mx-auto py-[30px]'>
+            <div className='mx-auto text-center'>
+            <Typewriter options={{ wrapperClassName: 'text-2xl font-serif italic lowercase font-bold text-background text-center pb-[10px]', cursorClassName: 'text-text', loop: true, delay: 50, deleteSpeed: 'natural' }}
+                            onInit={(typewriter) => {
+
+                                typewriter
+
+                                    .typeString("made with")
+                                    .pauseFor(500)
+                                    .typeString(" <span class='text-accent'>love</span>")
+                                    .pauseFor(500)
+                                    .deleteChars(4)
+                                    .typeString("<span class='text-accent'>React</span>")
+                                    .pauseFor(500)
+                                    .deleteChars(5)
+                                    .typeString("<span class='text-accent'>Next.js</span>")
+                                    .pauseFor(500)
+                                    .deleteChars(7)
+                                    .typeString("<span class='text-accent'>TailwindCSS</span>")
+                                    .pauseFor(500)
+                                    .deleteChars(11)
+                                    .typeString("<span class='text-accent'>Vercel</span>")
+                                    .pauseFor(500)
+                                    .deleteChars(6)
+                                    .typeString("<span class='text-accent'>Figma</span>")
+                                    .pauseFor(500)
+                                    .deleteChars(5)
+                                    .typeString("<span class='text-accent'>love</span>")
+                                    .pauseFor(2000)
+                                    
+                                    .start();
+
+                            }}
+                        />
+                <div className='grid grid-cols-6 py-[10px]'>
                     <a href="https://www.instagram.com/peter_cybriwsky/">
                         <AiFillInstagram className='footerIcon' />
                     </a>

@@ -5,7 +5,7 @@ import FadeIn from 'react-fade-in/lib/FadeIn';
 
 const AboutMe = () => {
     return (
-        <div className='mx-auto items-center justify-center'>
+        <div id="pete" className='mx-auto items-center justify-center'>
             <FadeIn>
 
                 <div className='grid grid-cols-1 my-auto mx-auto laptop:grid-cols-2 text-left h-[900px]'>
@@ -14,11 +14,11 @@ const AboutMe = () => {
                         <h2 className='text-4xl text-left font-serif font-bold italic my-[10px] text-primary'>Hi, I'm Pete</h2>
 
                         <h1 className='my-[5px]'>
-                            On paper, I'm an entrepreneur building <span className='font-serif font-bold italic text-primary'><a href="https://ngenart.com">n-gen</a></span> at the intersection of art and data. You should check it out.
+                            On paper, I'm an entrepreneur based in New York building <span className='font-serif font-bold italic text-primary'><a href="https://ngenart.com">n-gen</a></span> at the intersection of art and data. You should check it out.
                         </h1>
 
                         <p className='my-[5px]'>
-                            In the past, I had studied computer science and have experience in product marketing and design.
+                            In the past, I studied computer science and worked in product marketing and design
                         </p>
 
                         <p className='my-[5px]'>
