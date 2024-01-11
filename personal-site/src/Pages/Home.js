@@ -10,7 +10,7 @@ import Work from './Components/Work/Work';
 
 const Home = () => {
   return (
-    <div className="App bg-background">
+    <div className="App bg-background text-text">
       <div className='w-[80%] mx-auto'>
         {/* Need to have styling and content here */}
         <AboutMe />

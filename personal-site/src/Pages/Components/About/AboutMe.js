@@ -18,11 +18,11 @@ const AboutMe = () => {
                         </h1>
 
                         <p className='my-[5px]'>
-                            In the past, I studied computer science and worked in product marketing and design
+                            At heart, I’m a passionate runner, music listener, and tinkerer. I love to build things and learn new skills. I'm currently trying to learn to draw alongside my generative art journey.
                         </p>
 
                         <p className='my-[5px]'>
-                            At heart, I’m a passionate runner, music listener, and tinkerer. I love to build things and learn new skills. I'm currently trying to learn to draw alongside my generative art journey.
+                            In the past, I studied computer science and worked in product marketing and design.
                         </p>
 
                         <p className='my-[5px]'>

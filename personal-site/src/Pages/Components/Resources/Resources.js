@@ -12,7 +12,7 @@ const AboutMe = () => {
                         <h2 className='text-4xl text-left font-serif font-bold italic my-[10px] text-primary'>Resources + Reading</h2>
 
                         <p className='my-[5px]'>
-                            I'm a big fan of sharing knowledge and learning from others. I'm also a big fan of reading. Here are a few highlights:
+                            If you've made it this far, you're probably interested in learning more about generative art. Below are a few resources that I've found helpful in my journey. I'll continue to add to this list as I find more resources. Of course, feel free to reach out to me directly if you have more questions about generative art, data art, or <span className='font-serif font-bold italic text-primary'><a href="https://ngenart.com">n-gen</a></span>.
                         </p>
 
                         <ul className='list-disc ml-4'>

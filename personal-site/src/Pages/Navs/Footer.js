@@ -17,24 +17,24 @@ const Footer = () => {
                                 typewriter
 
                                     .typeString("made with")
-                                    .pauseFor(500)
+                                    .pauseFor(2500)
                                     .typeString(" <span class='text-accent'>love</span>")
-                                    .pauseFor(500)
+                                    .pauseFor(2500)
                                     .deleteChars(4)
                                     .typeString("<span class='text-accent'>React</span>")
-                                    .pauseFor(500)
+                                    .pauseFor(2500)
                                     .deleteChars(5)
                                     .typeString("<span class='text-accent'>Next.js</span>")
-                                    .pauseFor(500)
+                                    .pauseFor(2500)
                                     .deleteChars(7)
                                     .typeString("<span class='text-accent'>TailwindCSS</span>")
-                                    .pauseFor(500)
+                                    .pauseFor(2500)
                                     .deleteChars(11)
                                     .typeString("<span class='text-accent'>Vercel</span>")
-                                    .pauseFor(500)
+                                    .pauseFor(2500)
                                     .deleteChars(6)
                                     .typeString("<span class='text-accent'>Figma</span>")
-                                    .pauseFor(500)
+                                    .pauseFor(2500)
                                     .deleteChars(5)
                                     .typeString("<span class='text-accent'>love</span>")
                                     .pauseFor(2000)
@@ -44,6 +44,12 @@ const Footer = () => {
                             }}
                         />
                 <div className='grid grid-cols-6 py-[10px]'>
+                    <a href='mailto:pete@ngenart.com'>
+                        <BsFillEnvelopeFill className='footerIcon' />
+                    </a>
+                    <a href='https://substack.com/@ngenart'>
+                        <SiSubstack className='footerIcon' />
+                    </a>
                     <a href="https://www.instagram.com/peter_cybriwsky/">
                         <AiFillInstagram className='footerIcon' />
                     </a>
@@ -55,12 +61,6 @@ const Footer = () => {
                     </a>
                     <a href="https://github.com/pcybriwsky">
                         <FaGithub className='footerIcon' />
-                    </a>
-                    <a href='https://substack.com/@ngenart'>
-                        <SiSubstack className='footerIcon' />
-                    </a>
-                    <a href='mailto:pete@ngenart.com'>
-                        <BsFillEnvelopeFill className='footerIcon' />
                     </a>
                 </div>
             </div>
