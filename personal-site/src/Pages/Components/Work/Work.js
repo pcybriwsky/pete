@@ -13,7 +13,7 @@ const AboutMe = () => {
                         <h2 className='text-4xl text-left font-serif font-bold italic my-[10px] text-primary'>Work</h2>
 
                         <p className='my-[5px]'>
-                            Much of my work is on display and free to create with on <span className='font-serif font-bold italic text-primary'><a href="https://ngenart.com>">n-gen</a></span>. I've featured a few below along with a couple of others.
+                            Most of my time is spent focused on building <span className='font-serif font-bold italic text-primary'><a href="https://ngenart.com>">n-gen</a></span>. To-date, we've had over 9M users create upwards of 40M data art pieces on the platform. I've included a few of my favorite pieces from the site along with a few of my personal projects below.
                         </p>
                     </div>
                     <div className='justify-center my-auto'>
