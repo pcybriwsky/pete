@@ -48,7 +48,6 @@ const getWeatherData = async (lat, lng) => {
 const myP5Sketch = (p) => {
   p.preload = async () => {
     weatherData = await getWeatherData(40.7128, -74.0060);
-    console.log(weatherData);
   }
 
   p.setup = async () => {
@@ -498,7 +497,7 @@ const myP5Sketch = (p) => {
     if (navigator.share) {
       var canvas = document.getElementsByClassName('p5Canvas')[0];
       var img = canvas.toDataURL("image/png");
-      const file = await dataURLtoFile(img, 'my-persona.png');
+      const file = await dataURLtoFile(img, 'my-output.png');
       shareFile(file, 'my-output.png', null);
     }
     else {
