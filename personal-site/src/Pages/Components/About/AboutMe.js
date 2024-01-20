@@ -22,7 +22,7 @@ const AboutMe = () => {
                         </p>
 
                         <p className='my-[5px]'>
-                            In the past, I studied computer science and worked in product marketing and design.
+                            In the past, I studied engineering and computer science at the <a href='https://engineering.virginia.edu/'>University of Virginia</a> and worked in digital product marketing and design at <a href ="https://prophet.com/">Prophet</a>.
                         </p>
 
                         <p className='my-[5px]'>

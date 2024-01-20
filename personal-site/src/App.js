@@ -7,6 +7,7 @@ import './App.css';
 const Home = lazy(() => import("./Pages/Home"))
 const Footer = lazy(() => import("./Pages/Navs/Footer"))
 const Nav = lazy(() => import("./Pages/Navs/Nav"))
+const Submission = lazy(() => import("./Pages/Components/Submissions/Submission"))
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
       <Nav />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/submission" element={<Submission />} />
       </Routes>
       <Footer />
     </Suspense>

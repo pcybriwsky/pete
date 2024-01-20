@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Typewriter from 'typewriter-effect';
 import FadeIn from 'react-fade-in/lib/FadeIn';
 import SketchComponent from './SketchComponent';
+// import { Sketch } from './Languages'; // Import your p5 sketch
 
 const openWeatherAPIKey = '5d07d30b0246f6207ec7888efecc0602';
 const options = {
@@ -76,6 +77,7 @@ const AboutMe = () => {
                         <SketchComponent />
                     </div>
                 </div>
+                {/* <Sketch /> */}
             </FadeIn>
         </div>
     );
