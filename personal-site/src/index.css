@@ -39,6 +39,9 @@ code {
   h1{
       @apply scroll-smooth;
   }
+  p{
+      @apply scroll-smooth leading-relaxed;
+  }
 }
 
 .hover-fill-text {

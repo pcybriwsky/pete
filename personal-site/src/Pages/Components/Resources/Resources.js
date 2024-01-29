@@ -5,7 +5,7 @@ import FadeIn from 'react-fade-in/lib/FadeIn';
 
 const AboutMe = () => {
     return (
-        <div className='mx-auto items-center justify-center py-[10px]'>
+        <div className='mx-auto items-center justify-center pt-[30px] pb-[60px]'>
                 <div className='grid grid-cols-1 my-auto text-left'>
                     <div className='justify-center my-auto'>
 

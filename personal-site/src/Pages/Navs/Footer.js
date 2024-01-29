@@ -43,7 +43,7 @@ const Footer = () => {
 
                             }}
                         />
-                <div className='grid grid-cols-6 py-[10px] mx-auto w-[95%]'>
+                <div className='grid grid-cols-6 py-[30px] mx-auto w-[90%] laptop:w-[35%]'>
                     <a href='mailto:pete@ngenart.com'>
                         <BsFillEnvelopeFill className='footerIcon' />
                     </a>
