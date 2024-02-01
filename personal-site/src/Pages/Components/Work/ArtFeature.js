@@ -12,7 +12,9 @@ const ArtFeature = ({ image, title, description, link }) => {
                         <p className='font-lg'>{description}</p>
                     </div>
                     <div className="max-w-[300px] mx-auto border-2 border-accent">
-                        <img src={image} alt={title} />
+                        <a href={link}>
+                            <img src={image} alt={title} />
+                        </a>
                     </div>
                 </div>
             </div>
