@@ -34,7 +34,7 @@ code {
 
 @layer base{
   a{
-      @apply text-primary hover:text-primary ease-linear transition-all duration-150 hover:opacity-[80%] scroll-smooth;
+      @apply text-primary hover:text-primary ease-linear duration-150 hover:opacity-[80%] scroll-smooth;
   }
   h1{
       @apply scroll-smooth;
