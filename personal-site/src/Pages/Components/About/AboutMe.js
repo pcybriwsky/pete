@@ -14,7 +14,7 @@ const AboutMe = () => {
                         <h2 className='text-4xl text-left font-serif font-bold italic my-[10px] text-primary'>Hi, I'm Pete</h2>
 
                         <h1 className='my-[5px]'>
-                            On paper, I'm an entrepreneur based in New York building <span className='font-serif font-bold italic text-primary'><a href="https://ngenart.com">n-gen</a></span> at the intersection of art and data. You should check it out.
+                            On paper, I'm an entrepreneur based in New York building <span className='font-serif font-bold italic text-primary'><a href="https://ngenart.com">n-gen</a></span>, a studio at the intersection of art, tech, and data. <a href='#work' className='scroll-smooth'>You can check out my work below.</a>
                         </h1>
 
                         <p className='my-[5px]'>
@@ -26,7 +26,7 @@ const AboutMe = () => {
                         </p>
 
                         <p className='my-[5px]'>
-                            Follow me on <span className='font-serif font-bold italic text-primary'><a href="https://twitter.com/pete_cybriwsky">Twitter</a></span> or <span className='font-serif font-bold italic text-primary'><a href="https://www.instagram.com/peter_cybriwsky/">Instagram</a></span> to see what I'm up to or read some longer-form thoughts on <span className='font-serif font-bold italic text-primary'><a href="https://ngenart.substack.com/">Substack</a></span>. Feel free to give me a shout there or over <span className='font-serif font-bold italic text-primary'><a href="mailto:pete@ngenart.com">email</a></span> as well.
+                            Follow me on <span className='text-primary'><a href="https://twitter.com/pete_cybriwsky">Twitter</a></span> or <span className='text-primary'><a href="https://www.instagram.com/peter_cybriwsky/">Instagram</a></span> to see what I'm up to or read some longer-form thoughts on <span className='text-primary'><a href="https://ngenart.substack.com/">Substack</a></span>. Feel free to give me a shout there or over <span className='text-primary'><a href="mailto:pete@ngenart.com">email</a></span> as well.
                         </p>
 
                     </div>

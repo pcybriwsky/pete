@@ -10,14 +10,14 @@ import Work from './Components/Work/Work';
 
 const Home = () => {
   return (
-    <div className="App bg-background text-text">
-      <div className='w-[80%] mx-auto'>
+    <div className="App bg-background text-text scroll-smooth">
+      <div className='w-[80%] mx-auto scroll-smooth'>
         {/* Need to have styling and content here */}
         <AboutMe />
+        <Work />
         <div className='flex justify-center'>
           <Drawing />
         </div>
-        <Work />
         <Resources />
         {/* After this need to have more of a bottom Nav*/}
       </div>

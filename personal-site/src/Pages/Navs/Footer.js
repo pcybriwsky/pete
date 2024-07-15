@@ -17,7 +17,6 @@ const Footer = () => {
                                 typewriter
 
                                     .typeString("made with")
-                                    .pauseFor(2500)
                                     .typeString(" <span class='text-accent'>love</span>")
                                     .pauseFor(2500)
                                     .deleteChars(4)
@@ -27,6 +26,9 @@ const Footer = () => {
                                     .typeString("<span class='text-accent'>Next.js</span>")
                                     .pauseFor(2500)
                                     .deleteChars(7)
+                                    .typeString("<span class='text-accent'>Processing</span>")
+                                    .pauseFor(2500)
+                                    .deleteChars(10)
                                     .typeString("<span class='text-accent'>TailwindCSS</span>")
                                     .pauseFor(2500)
                                     .deleteChars(11)
@@ -35,10 +37,6 @@ const Footer = () => {
                                     .deleteChars(6)
                                     .typeString("<span class='text-accent'>Figma</span>")
                                     .pauseFor(2500)
-                                    .deleteChars(5)
-                                    .typeString("<span class='text-accent'>love</span>")
-                                    .pauseFor(2000)
-                                    
                                     .start();
 
                             }}
