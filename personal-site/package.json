@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@indistinguishable-from-magic/nexus-js": "^1.0.0",
     "@p5-wrapper/react": "^4.3.2",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
