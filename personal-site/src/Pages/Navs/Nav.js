@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 
 const Nav = () => {
@@ -19,31 +18,45 @@ const Nav = () => {
       const navHeight = document.querySelector('nav').offsetHeight;
 
       if (scrollPosition > navHeight) {
-        setNavColor('bg-alt');
+        setNavColor('bg-alt shadow-sm');
       } else {
         setNavColor('bg-background');
       }
     };
 
     window.addEventListener('scroll', handleScroll);
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <nav className={`${navColor} sticky top-0`}>
+    <nav className={`${navColor} sticky top-0 transition-all duration-300`}>
       <div className='mx-auto w-[80%]'>
-      <a href='#pete' className='scroll-smooth'>
-          <p
+        <a href='#pete' className='scroll-smooth'>
+          <div
             onMouseOver={handleMouseOver}
             onMouseOut={handleMouseOut}
-            className={`hover:text-primary text-2xl my-auto flex text-text text-left py-[10px] ease-linear transition-all duration-150 scroll-smooth`}
-          ><img className='w-[48px] h-[48px]' src={require("../../Assets/Images/icon64.png")}></img><span className={`${isHovered ? 'visible text-[#000000]' : 'invisible'} ease-linear my-auto transition-all duration-150`}>(ete)</span>
-          </p>
+            className='flex items-center py-[10px] group'
+          >
+            <span className='text-2xl font-mono text-[#0a0a0a]'>:</span>
+            <span className='text-2xl font-mono bg-gradient-to-r from-primary via-secondary to-accent bg-[length:200%_auto] animate-gradient-fast bg-clip-text text-transparent'>
+              P
+            </span>
+            <span 
+              className={`
+                text-2xl
+                font-mono
+                transform
+                transition-all
+                duration-300
+                ease-out
+                ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}
+              `}
+            >
+              (ete)
+            </span>
+          </div>
         </a>
-        </div>
+      </div>
     </nav>
   );
 };

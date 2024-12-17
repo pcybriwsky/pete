@@ -10,15 +10,64 @@ module.exports = {
         serif: ["Merriweather", "serif"],
         emoji: ["Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"],
         courier: ["Courier New", "Courier", "monospace"],
+      },
+      keyframes: {
+        'gradient-dance': {
+          '0%, 100%': {
+            'background-position': '0% 50%',
+            'background-size': '400% 400%'
+          },
+          '25%': {
+            'background-position': '50% 25%',
+            'background-size': '400% 400%'
+          },
+          '50%': {
+            'background-position': '100% 50%',
+            'background-size': '400% 400%'
+          },
+          '75%': {
+            'background-position': '50% 75%',
+            'background-size': '400% 400%'
+          }
+        },
+        'gradient-shift': {
+          '0%, 100%': { 'background-position': '0% center' },
+          '50%': { 'background-position': '100% center' }
+        }
+      },
+      animation: {
+        'gradient-dance': 'gradient-dance 12s ease infinite',
+        'gradient-fast': 'gradient-shift 2s linear infinite'
+      },
+      backgroundImage: {
+        'dancing-gradient': 'linear-gradient(45deg, #E6394644 0%, #fefefe33 33%, #fefefe33 66%, #F4A26144 100%)',
+      },
+      transitionTimingFunction: {
+        'in-out-soft': 'cubic-bezier(0.4, 0, 0.2, 1)',
       }
     },
     colors: {
-      primary: '#9e7777',
-      secondary: '#b8a085',
-      accent: '#8c5e58',
-      background: '#f5f5f5',
-      text: '#404040',
-      alt: '#EAE0D5'
+      primary: '#E63946',
+      secondary: '#F4A261',
+      accent: '#F4E1A1',
+      background: '#FFFFFF',
+      text: '#2A2A2A',
+      alt: '#FDF8F2',
+      coral: {
+        light: '#F8AFA6',
+        DEFAULT: '#E63946',
+        dark: '#D63141'
+      },
+      sand: {
+        light: '#F4E1A1',
+        DEFAULT: '#F4A261',
+        dark: '#E8915D'
+      },
+      cream: {
+        light: '#FDF8F2',
+        DEFAULT: '#F9EED7',
+        dark: '#F4E1A1'
+      }
     },
     screens: {
       'tinyMobile': '280px',

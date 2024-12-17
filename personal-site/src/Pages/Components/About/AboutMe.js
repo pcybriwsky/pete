@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Typewriter from 'typewriter-effect';
 import FadeIn from 'react-fade-in/lib/FadeIn';
@@ -13,20 +12,24 @@ const AboutMe = () => {
 
                         <h2 className='text-4xl text-left font-serif font-bold italic my-[10px] text-primary'>Hi, I'm Pete</h2>
 
+                        <h2 className='my-[5px]'>
+                            I'm a New York-based artist and entrepreneur transforming everyday data into beautiful experiences. I build data-driven art and apps, and help companies tell creative stories with their data. If you'd like to work together, <a href="mailto:pete@ngenart.com">let's chat!</a>
+                        </h2>
+
                         <h1 className='my-[5px]'>
-                            On paper, I'm an entrepreneur based in New York building <span className='font-serif font-bold italic text-primary'><a href="https://ngenart.com">n-gen</a></span>, a studio at the intersection of art, tech, and data. <a href='#work' className='scroll-smooth'>You can check out my work below.</a>
+                            Recently, I created <span className='font-serif font-bold italic text-primary'><a href="https://apps.apple.com/us/app/day-by-data/id6737629704">Day by Data</a></span> and <span className='font-serif font-bold italic text-primary'><a href="https://ngenart.com">n-gen</a></span>, helping millions of people express themselves through their health and music data. 
                         </h1>
 
+                        <h2 className='my-[5px]'>
+                            My data art piece <span className='font-serif font-bold italic text-primary'><a href="https://datascience.virginia.edu/pages/nebulae-pete-cybriwsky">Nebulae</a></span> is currently on display at UVA's School of Data Science and won two awards at their innagural Data is Art competition.
+                        </h2>
+
                         <p className='my-[5px]'>
-                            At heart, I’m a passionate runner, music listener, and tinkerer. I love to build things and learn new skills. I'm currently trying to learn to draw alongside my generative art journey.
+                            Previously, I studied engineering and computer science at the <a href='https://engineering.virginia.edu/'>University of Virginia</a> and worked in digital product marketing and design at <a href ="https://prophet.com/">Prophet</a>.
                         </p>
 
                         <p className='my-[5px]'>
-                            In the past, I studied engineering and computer science at the <a href='https://engineering.virginia.edu/'>University of Virginia</a> and worked in digital product marketing and design at <a href ="https://prophet.com/">Prophet</a>.
-                        </p>
-
-                        <p className='my-[5px]'>
-                            Follow me on <span className='text-primary'><a href="https://twitter.com/pete_cybriwsky">Twitter</a></span> or <span className='text-primary'><a href="https://www.instagram.com/peter_cybriwsky/">Instagram</a></span> to see what I'm up to or read some longer-form thoughts on <span className='text-primary'><a href="https://ngenart.substack.com/">Substack</a></span>. Feel free to give me a shout there or over <span className='text-primary'><a href="mailto:pete@ngenart.com">email</a></span> as well.
+                        Find me on <span className='text-primary'><a href="https://instagram.com/_re_pete">Instagram</a></span> or <span className='text-primary'><a href="https://twitter.com/_re_pete">Twitter</a></span> or reach out via <span className='text-primary'><a href="mailto:pete@ngenart.com">email</a></span> to work together.
                         </p>
 
                     </div>

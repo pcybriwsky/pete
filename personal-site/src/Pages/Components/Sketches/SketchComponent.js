@@ -1,21 +1,34 @@
 import React, { useEffect, useRef } from 'react';
 import p5 from 'p5';
-import myP5Sketch from './Hearts'; // Import your p5 sketch
+import circles from './Circles';
+import Hearts from './Hearts';
+import Landscape from './Landscape';
+import Wave from './Wave';
 
-const P5Wrapper = () => {
+const sketchMap = {
+  circles,
+  Hearts,
+  Wave
+};
+
+const P5Wrapper = ({ sketch }) => {
   const sketchRef = useRef();
 
   useEffect(() => {
-    // Create a new p5 instance and attach it to the ref's current element
-    const p5Instance = new p5(myP5Sketch, sketchRef.current);
+    // Get the correct sketch from the map
+    const selectedSketch = sketchMap[sketch];
+    if (!selectedSketch) return;
 
-    // Optional: Cleanup function to remove the p5 instance on component unmount
+    // Create a new p5 instance and attach it to the ref's current element
+    const p5Instance = new p5(selectedSketch, sketchRef.current);
+
+    // Cleanup function to remove the p5 instance on component unmount
     return () => {
       p5Instance.remove();
     };
-  }, []);
+  }, [sketch]);
 
-  return <div ref={sketchRef} />;
+  return <div ref={sketchRef} className="w-full h-[400px] flex items-center justify-center" />;
 };
 
 export default P5Wrapper;
