@@ -8,7 +8,7 @@ const sketchMap = {
     displayName: 'Landscape Generator'
   },
   circles: {
-    component: 'circles',
+    component: 'Circles',
     displayName: 'Interactive Circles'
   },
   hearts: {
@@ -18,6 +18,14 @@ const sketchMap = {
   wave: {
     component: 'Wave',
     displayName: 'Wave'
+  },
+  sketchbook: {
+    component: 'Sketchbook',
+    displayName: 'Sketchbook'
+  },
+  flowfield: {
+    component: 'Flowfield',
+    displayName: 'Flowfield'
   }
 };
 

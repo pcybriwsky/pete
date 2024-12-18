@@ -173,30 +173,30 @@ let lineFunction = {
     }
   
     // Give custome set of points, like a trace of a shape or Strava GPS coordinates
-    setPoints(pointsArray) {
+    setPoints(pointsArray, p) {
       this.points = pointsArray.length;
       if (this.points < this.minWeight) {
         let newPoints = [];
         let pointsToAdd = this.minWeight - this.points;
-        let segments = this.points - 1; // Number of segments between original points
-        let addPerSegment = pointsToAdd / segments; // New points per segment
+        let segments = this.points - 1;
+        let addPerSegment = pointsToAdd / segments;
   
         for (let i = 0; i < segments; i++) {
-          // Add the original point
           newPoints.push(pointsArray[i]);
-  
-          // Calculate and add the interpolated points
           for (let j = 1; j <= addPerSegment; j++) {
-            let interpolatedPoint = this.interpolateBetweenPoints(pointsArray[i], pointsArray[i + 1], j / (addPerSegment + 1));
+            let interpolatedPoint = this.interpolateBetweenPoints(
+              pointsArray[i], 
+              pointsArray[i + 1], 
+              j / (addPerSegment + 1),
+              p
+            );
             newPoints.push(interpolatedPoint);
           }
         }
         newPoints.push(pointsArray[pointsArray.length - 1]);
         this.pointsArray = newPoints;
         this.points = this.pointsArray.length;
-      }
-  
-      else {
+      } else {
         this.pointsArray = pointsArray;
       }
     }
@@ -210,94 +210,118 @@ let lineFunction = {
   
     // Set points with a shape function
     setPointsFunction(x1, y1, x2, y2, p) {
-      this.points = this.drawFunction.formula(x1, y1, x2, y2, (p.random(this.minWeight, this.maxWeight)), p);
+      if (!this.drawFunction) {
+        console.error('Draw function not set');
+        return;
+      }
+      
+      const points = Math.round(p.random(this.minWeight, this.maxWeight));
+      this.pointsArray = this.drawFunction.formula(x1, y1, x2, y2, points, p);
+      this.points = this.pointsArray.length;
     }
   
     drawLine(x1, y1, x2, y2, count, p) {
-      // console.log(x1, y1, x2, y2, count, p)
-      p.ellipseMode(p.CENTER);
-      let strokeLength = p.dist(x1, y1, x2, y2);
-  
-      let points, pointsArray = null;
-  
-      // Define the points to be drawn through
-      if (this.pointsArray == null && this.drawFunction != null) {
-  
-        this.pointsArray = this.drawFunction.formula(x1, y1, x2, y2, this.minWeight, p);
-        this.points = this.pointsArray.length;
+      if (!p) {
+        console.error('p5 instance not provided');
+        return;
       }
   
-      pointsArray = this.pointsArray;
-      points = this.pointsArray.length;
+      try {
+        p.push(); // Save current drawing state
+        p.ellipseMode(p.CENTER);
+        let strokeLength = p.dist(x1, y1, x2, y2);
   
-      // Define the variables for the line that will impact the drawing
+        let points, pointsArray = null;
   
-      let endBubbleProb = this.endBubbleP; // // turn into a var with setter
-      let bubbleCheck = (Math.random(1) < endBubbleProb);
-      let splatterProb = this.splatterP; // turn into a var with setter
-      let willSplatter = (Math.random(1) < splatterProb); // turn into a var based on platter Prob and some random calc
-      let splatterDistance = points * this.splatterStart; // turn into a var with setter
-      let splats = Math.ceil(p.random(1, this.maxSplats)); // turn into a var with setter
+        // Define the points to be drawn through
+        if (this.pointsArray == null && this.drawFunction != null) {
   
-      let weightF = (n, e) => {
-        let weight = p.map(n, 0, 1, this.minWeight, 40000); // make this the point weight if it exists
-        return ((6 * weight + p.random(strokeLength)) / p.width) * e;
-      };
+          this.pointsArray = this.drawFunction.formula(x1, y1, x2, y2, this.minWeight, p);
+          this.points = this.pointsArray.length;
+        }
   
-      let displaceF = (n, d) => {
-        return p.noise(n) * d;
-      };
+        pointsArray = this.pointsArray;
+        points = this.pointsArray.length;
   
-      // Set the colors for the line to be drawn
-      p.colorMode(p.RGB);
-      let colors = [];
-      let colorsLength = this.colors.length
-      for (let c = 0; c < colorsLength; c++) {
+        // Define the variables for the line that will impact the drawing
+  
+        let endBubbleProb = this.endBubbleP; // // turn into a var with setter
+        let bubbleCheck = (Math.random(1) < endBubbleProb);
+        let splatterProb = this.splatterP; // turn into a var with setter
+        let willSplatter = (Math.random(1) < splatterProb); // turn into a var based on platter Prob and some random calc
+        let splatterDistance = points * this.splatterStart; // turn into a var with setter
+        let splats = Math.ceil(p.random(1, this.maxSplats)); // turn into a var with setter
+  
+        let weightF = (n, e) => {
+          let weight = p.map(n, 0, 1, this.minWeight, 40000); // make this the point weight if it exists
+          return ((6 * weight + p.random(strokeLength)) / p.width) * e;
+        };
+  
+        let displaceF = (n, d) => {
+          return p.noise(n) * d;
+        };
+  
+        // Set the colors for the line to be drawn
+        p.colorMode(p.RGB);
+        let colors = [];
+        let colorsLength = this.colors.length
+        for (let c = 0; c < colorsLength; c++) {
+          let c1 = null;
+          c1 = p.color(this.colors[c]);
+          colors.push(c1);
+        }
+  
         let c1 = null;
-        c1 = p.color(this.colors[c]);
-        colors.push(c1);
-      }
+        let c2 = null;
   
-      let c1 = null;
-      let c2 = null;
+        // Iterate through the points and draw
+        for (let n = 0; n < points; n += 1) {
+          if (n < count) {
+            let check = Math.random(1);
   
-      // Iterate through the points and draw
-      for (let n = 0; n < points; n += 1) {
-        if (n < count) {
-          let check = Math.random(1);
-  
-          let plotPoint = this.pointsArray[n]
-          let plotX = plotPoint.x
-          let plotY = plotPoint.y
-          let inter = null
+            let plotPoint = this.pointsArray[n]
+            let plotX = plotPoint.x
+            let plotY = plotPoint.y
+            let inter = null
   
   
-          let colorInter = p.map(n, 0, points, 0, colorsLength)
+            let colorInter = p.map(n, 0, points, 0, colorsLength)
   
-          c1 = colors[Math.floor(colorInter)]
-          c2 = colors[Math.ceil(colorInter)]
+            c1 = colors[Math.floor(colorInter)]
+            c2 = colors[Math.ceil(colorInter)]
   
-          if (c2 == undefined) {
-            c2 = c1;
-          }
+            if (c2 == undefined) {
+              c2 = c1;
+            }
   
   
-          let fixedInter = p.map(colorInter, Math.floor(colorInter), Math.ceil(colorInter), 0, 1, true);
+            let fixedInter = p.map(colorInter, Math.floor(colorInter), Math.ceil(colorInter), 0, 1, true);
   
-          let c = p.lerpColor(c1, c2, fixedInter);
-          p.fill(c);
-          p.noStroke()
+            let c = p.lerpColor(c1, c2, fixedInter);
+            p.fill(c);
+            p.noStroke()
   
-          // Edit something here to reflect weight
+            // Edit something here to reflect weight
   
-          if (willSplatter && n > splatterDistance) {
-            let totalPointsLeft = points - splatterDistance;
-            let cuts = Math.floor(totalPointsLeft / splats);
-            if (n % cuts == 0) {
+            if (willSplatter && n > splatterDistance) {
+              let totalPointsLeft = points - splatterDistance;
+              let cuts = Math.floor(totalPointsLeft / splats);
+              if (n % cuts == 0) {
   
+                let displacement = displaceF(n, this.displacement);
+                let weight = weightF(inter, 0.2);
+  
+                p.ellipse(
+                  plotX + displacement / 2,
+                  plotY + displacement / 2,
+                  weight,
+                  weight
+                );
+              }
+            }
+            else if (check > this.splitP) {
+              let weight = weightF(inter, 0.15);
               let displacement = displaceF(n, this.displacement);
-              let weight = weightF(inter, 0.2);
-  
               p.ellipse(
                 plotX + displacement / 2,
                 plotY + displacement / 2,
@@ -305,145 +329,157 @@ let lineFunction = {
                 weight
               );
             }
-          }
-          else if (check > this.splitP) {
-            let weight = weightF(inter, 0.15);
-            let displacement = displaceF(n, this.displacement);
-            p.ellipse(
-              plotX + displacement / 2,
-              plotY + displacement / 2,
-              weight,
-              weight
-            );
-          }
-          if (bubbleCheck && n == points - 1 && !willSplatter) {
-            let weight = weightF(inter, 0.35);
-            p.ellipse(plotX, plotY, weight, weight);
-          }
+            if (bubbleCheck && n == points - 1 && !willSplatter) {
+              let weight = weightF(inter, 0.35);
+              p.ellipse(plotX, plotY, weight, weight);
+            }
   
   
+          }
+  
+          if (this.addStops > 0 && n == 0) {
+            let colorInter = p.map(n, 0, points, 0, colorsLength)
+  
+            c1 = colors[Math.floor(colorInter)]
+            c2 = colors[Math.ceil(colorInter)]
+  
+            if (c2 == undefined) {
+              c2 = c1;
+            }
+  
+            let fixedInter = p.map(colorInter, Math.floor(colorInter), Math.ceil(colorInter), 0, 1, true);
+            let c = p.lerpColor(c1, c2, fixedInter);
+            p.fill(c);
+            p.textSize(20)
+            p.text("a", pointsArray[n].x, pointsArray[n].y + 20)
+          }
+  
+          if (this.addStops > 1 && n == points - 1) {
+            let colorInter = p.map(n, 0, points, 0, colorsLength)
+  
+            c1 = colors[Math.floor(colorInter)]
+            c2 = colors[Math.ceil(colorInter)]
+  
+            if (c2 == undefined) {
+              c2 = c1;
+            }
+  
+  
+            let fixedInter = p.map(colorInter, Math.floor(colorInter), Math.ceil(colorInter), 0, 1, true);
+  
+            let c = p.lerpColor(c1, c2, fixedInter);
+            p.fill(c);
+            p.textSize(20)
+            p.text("b", pointsArray[n].x, pointsArray[n].y + 20)
+          }
         }
   
-        if (this.addStops > 0 && n == 0) {
-          let colorInter = p.map(n, 0, points, 0, colorsLength)
-  
-          c1 = colors[Math.floor(colorInter)]
-          c2 = colors[Math.ceil(colorInter)]
-  
-          if (c2 == undefined) {
-            c2 = c1;
-          }
-  
-          let fixedInter = p.map(colorInter, Math.floor(colorInter), Math.ceil(colorInter), 0, 1, true);
-          let c = p.lerpColor(c1, c2, fixedInter);
-          p.fill(c);
-          p.textSize(20)
-          p.text("a", pointsArray[n].x, pointsArray[n].y + 20)
-        }
-  
-        if (this.addStops > 1 && n == points - 1) {
-          let colorInter = p.map(n, 0, points, 0, colorsLength)
-  
-          c1 = colors[Math.floor(colorInter)]
-          c2 = colors[Math.ceil(colorInter)]
-  
-          if (c2 == undefined) {
-            c2 = c1;
-          }
-  
-  
-          let fixedInter = p.map(colorInter, Math.floor(colorInter), Math.ceil(colorInter), 0, 1, true);
-  
-          let c = p.lerpColor(c1, c2, fixedInter);
-          p.fill(c);
-          p.textSize(20)
-          p.text("b", pointsArray[n].x, pointsArray[n].y + 20)
-        }
+        p.pop(); // Restore drawing state
+      } catch (error) {
+        console.error('Error in drawLine:', error);
       }
     }
   
     animateLine(x1, y1, x2, y2, countStart, countEnd, p) {
-      p.ellipseMode(p.CENTER);
-      let strokeLength = p.dist(x1, y1, x2, y2);
-      let points, pointsArray = null;
-  
-      // Define the points to be drawn through
-      if (this.pointsArray == null && this.drawFunction != null) {
-        this.pointsArray = this.drawFunction.formula(x1, y1, x2, y2, this.minWeight, p);
-        this.points = this.pointsArray.length;
+      if (!p) {
+        console.error('p5 instance not provided');
+        return;
       }
   
-      pointsArray = this.pointsArray;
-      points = this.pointsArray.length;
+      try {
+        p.push();
+        p.ellipseMode(p.CENTER);
+        let strokeLength = p.dist(x1, y1, x2, y2);
+        let points, pointsArray = null;
   
-      // Define the variables for the line that will impact the drawing
+        // Define the points to be drawn through
+        if (this.pointsArray == null && this.drawFunction != null) {
+          this.pointsArray = this.drawFunction.formula(x1, y1, x2, y2, this.minWeight, p);
+          this.points = this.pointsArray.length;
+        }
   
-      let endBubbleProb = this.endBubbleP; // // turn into a var with setter
-      let bubbleCheck = (Math.random(1) < endBubbleProb);
-      let splatterProb = this.splatterP; // turn into a var with setter
-      let willSplatter = (Math.random(1) < splatterProb); // turn into a var based on platter Prob and some random calc
-      let splatterDistance = points * this.splatterStart; // turn into a var with setter
-      let splats = Math.ceil(p.random(1, this.maxSplats)); // turn into a var with setter
+        pointsArray = this.pointsArray;
+        points = this.pointsArray.length;
   
-      let weightF = (n, e) => {
-        let weight = p.map(n, 0, 1, this.minWeight, 40000); // make this the point weight if it exists
-        return ((6 * weight + p.random(strokeLength)) / p.width) * e;
-      };
+        // Define the variables for the line that will impact the drawing
   
-      let displaceF = (n, d) => {
-        return p.noise(n) * d;
-      };
+        let endBubbleProb = this.endBubbleP; // // turn into a var with setter
+        let bubbleCheck = (Math.random(1) < endBubbleProb);
+        let splatterProb = this.splatterP; // turn into a var with setter
+        let willSplatter = (Math.random(1) < splatterProb); // turn into a var based on platter Prob and some random calc
+        let splatterDistance = points * this.splatterStart; // turn into a var with setter
+        let splats = Math.ceil(p.random(1, this.maxSplats)); // turn into a var with setter
   
-      // Set the colors for the line to be drawn
-      p.colorMode(p.RGB);
-      let colors = [];
-      let colorsLength = this.colors.length
-      for (let c = 0; c < colorsLength; c++) {
+        let weightF = (n, e) => {
+          let weight = p.map(n, 0, 1, this.minWeight, 40000); // make this the point weight if it exists
+          return ((6 * weight + p.random(strokeLength)) / p.width) * e;
+        };
+  
+        let displaceF = (n, d) => {
+          return p.noise(n) * d;
+        };
+  
+        // Set the colors for the line to be drawn
+        p.colorMode(p.RGB);
+        let colors = [];
+        let colorsLength = this.colors.length
+        for (let c = 0; c < colorsLength; c++) {
+          let c1 = null;
+          c1 = p.color(this.colors[c]);
+          colors.push(c1);
+        }
+  
         let c1 = null;
-        c1 = p.color(this.colors[c]);
-        colors.push(c1);
-      }
+        let c2 = null;
   
-      let c1 = null;
-      let c2 = null;
-  
-      // Iterate through the points and draw
-      for (let n = countStart; n < countEnd; n += 1) {
-        // console.log(n, this.addStops, countStart)
-        if (n < points) {
-          let check = Math.random(1);
-          let plotPoint = this.pointsArray[n]
-          let plotX = plotPoint.x
-          let plotY = plotPoint.y
-          let inter = null
+        // Iterate through the points and draw
+        for (let n = countStart; n < countEnd; n += 1) {
+          // console.log(n, this.addStops, countStart)
+          if (n < points) {
+            let check = Math.random(1);
+            let plotPoint = this.pointsArray[n]
+            let plotX = plotPoint.x
+            let plotY = plotPoint.y
+            let inter = null
   
   
-          let colorInter = p.map(n, 0, points, 0, colorsLength)
+            let colorInter = p.map(n, 0, points, 0, colorsLength)
   
-          c1 = colors[Math.floor(colorInter)]
-          c2 = colors[Math.ceil(colorInter)]
+            c1 = colors[Math.floor(colorInter)]
+            c2 = colors[Math.ceil(colorInter)]
   
-          if (c2 == undefined) {
-            c2 = c1;
-          }
+            if (c2 == undefined) {
+              c2 = c1;
+            }
   
   
-          let fixedInter = p.map(colorInter, Math.floor(colorInter), Math.ceil(colorInter), 0, 1, true);
+            let fixedInter = p.map(colorInter, Math.floor(colorInter), Math.ceil(colorInter), 0, 1, true);
   
-          let c = p.lerpColor(c1, c2, fixedInter);
-          p.fill(c);
-          p.noStroke()
+            let c = p.lerpColor(c1, c2, fixedInter);
+            p.fill(c);
+            p.noStroke()
   
-          // Edit something here to reflect weight
+            // Edit something here to reflect weight
   
-          if (willSplatter && n > splatterDistance) {
-            let totalPointsLeft = points - splatterDistance;
-            let cuts = Math.floor(totalPointsLeft / splats);
-            if (n % cuts == 0) {
+            if (willSplatter && n > splatterDistance) {
+              let totalPointsLeft = points - splatterDistance;
+              let cuts = Math.floor(totalPointsLeft / splats);
+              if (n % cuts == 0) {
   
+                let displacement = displaceF(n, this.displacement);
+                let weight = weightF(inter, 0.2);
+  
+                p.ellipse(
+                  plotX + displacement / 2,
+                  plotY + displacement / 2,
+                  weight,
+                  weight
+                );
+              }
+            }
+            else if (check > this.splitP) {
+              let weight = weightF(inter, 0.15);
               let displacement = displaceF(n, this.displacement);
-              let weight = weightF(inter, 0.2);
-  
               p.ellipse(
                 plotX + displacement / 2,
                 plotY + displacement / 2,
@@ -451,61 +487,55 @@ let lineFunction = {
                 weight
               );
             }
-          }
-          else if (check > this.splitP) {
-            let weight = weightF(inter, 0.15);
-            let displacement = displaceF(n, this.displacement);
-            p.ellipse(
-              plotX + displacement / 2,
-              plotY + displacement / 2,
-              weight,
-              weight
-            );
-          }
-          if (bubbleCheck && n == points - 1 && !willSplatter) {
-            let weight = weightF(inter, 0.35);
-            p.ellipse(plotX, plotY, weight, weight);
-          }
+            if (bubbleCheck && n == points - 1 && !willSplatter) {
+              let weight = weightF(inter, 0.35);
+              p.ellipse(plotX, plotY, weight, weight);
+            }
   
   
+          }
+  
+          if (this.addStops > 0 && n == 0) {
+            let colorInter = p.map(0, 0, points, 0, colorsLength)
+  
+            c1 = colors[Math.floor(colorInter)]
+            c2 = colors[Math.ceil(colorInter)]
+  
+            if (c2 == undefined) {
+              c2 = c1;
+            }
+  
+            let fixedInter = p.map(colorInter, Math.floor(colorInter), Math.ceil(colorInter), 0, 1, true);
+            let c = p.lerpColor(c1, c2, fixedInter);
+            p.fill(c);
+            p.textSize(20)
+            p.text("a", pointsArray[0].x, pointsArray[0].y + 20)
+          }
+  
+          if (this.addStops > 1) {
+            let colorInter = p.map(points-1, 0, points, 0, colorsLength)
+  
+            c1 = colors[Math.floor(colorInter)]
+            c2 = colors[Math.ceil(colorInter)]
+  
+            if (c2 == undefined) {
+              c2 = c1;
+            }
+  
+  
+            let fixedInter = p.map(colorInter, Math.floor(colorInter), Math.ceil(colorInter), 0, 1, true);
+  
+            let c = p.lerpColor(c1, c2, fixedInter);
+            p.fill(c);
+            p.textSize(20)
+            p.text("a", pointsArray[0].x, pointsArray[0].y + 20)
+            p.text("b", pointsArray[points - 1].x, pointsArray[points-1].y + 20)
+          }
         }
   
-        if (this.addStops > 0 && n == 0) {
-          let colorInter = p.map(0, 0, points, 0, colorsLength)
-  
-          c1 = colors[Math.floor(colorInter)]
-          c2 = colors[Math.ceil(colorInter)]
-  
-          if (c2 == undefined) {
-            c2 = c1;
-          }
-  
-          let fixedInter = p.map(colorInter, Math.floor(colorInter), Math.ceil(colorInter), 0, 1, true);
-          let c = p.lerpColor(c1, c2, fixedInter);
-          p.fill(c);
-          p.textSize(20)
-          p.text("a", pointsArray[0].x, pointsArray[0].y + 20)
-        }
-  
-        if (this.addStops > 1) {
-          let colorInter = p.map(points-1, 0, points, 0, colorsLength)
-  
-          c1 = colors[Math.floor(colorInter)]
-          c2 = colors[Math.ceil(colorInter)]
-  
-          if (c2 == undefined) {
-            c2 = c1;
-          }
-  
-  
-          let fixedInter = p.map(colorInter, Math.floor(colorInter), Math.ceil(colorInter), 0, 1, true);
-  
-          let c = p.lerpColor(c1, c2, fixedInter);
-          p.fill(c);
-          p.textSize(20)
-          p.text("a", pointsArray[0].x, pointsArray[0].y + 20)
-          p.text("b", pointsArray[points - 1].x, pointsArray[points-1].y + 20)
-        }
+        p.pop();
+      } catch (error) {
+        console.error('Error in animateLine:', error);
       }
     }
   }

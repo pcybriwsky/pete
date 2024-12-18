@@ -4,11 +4,15 @@ import circles from './Circles';
 import Hearts from './Hearts';
 import Landscape from './Landscape';
 import Wave from './Wave';
+import Sketchbook from './Sketchbook';
+import Flowfield from './Flowfield';
 
 const sketchMap = {
   circles,
   Hearts,
-  Wave
+  Wave,
+  Sketchbook,
+  Flowfield
 };
 
 const P5Wrapper = ({ sketch }) => {
@@ -28,7 +32,7 @@ const P5Wrapper = ({ sketch }) => {
     };
   }, [sketch]);
 
-  return <div ref={sketchRef} className="w-full h-[400px] flex items-center justify-center" />;
+  return <div ref={sketchRef} className="w-full h-[800px] flex items-center justify-center" />;
 };
 
 export default P5Wrapper;
