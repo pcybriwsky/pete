@@ -36,7 +36,7 @@ const NavItem = ({ label, isMobile = false, onClick }) => {
     
     const handleClick = (e) => {
         e.preventDefault();
-        if (onClick) onClick(); // Close mobile menu if needed
+        if (onClick) onClick();
         
         switch(label.toLowerCase()) {
             case 're:pete':
@@ -62,14 +62,14 @@ const NavItem = ({ label, isMobile = false, onClick }) => {
             className={`
                 group inline-flex items-center gap-2 font-mono hover:text-primary 
                 transition-all duration-300 hover:scale-[1.02] hover:-rotate-1
-                ${isMobile ? 'text-2xl py-4' : 'text-sm'}
+                ${isMobile ? 'text-xl py-4' : 'text-sm'}
             `}
         >
-            <span className="opacity-0 -translate-x-2 transition-all duration-300 
+            <span>{label}</span>
+            <span className="opacity-0 translate-x-2 transition-all duration-300 
                            group-hover:opacity-100 group-hover:translate-x-0">
                 {getNavIcon(label)}
             </span>
-            {label}
         </button>
     );
 };
@@ -78,22 +78,21 @@ const MobileMenu = ({ isOpen, onClose, navItems }) => {
     return (
         <div 
             className={`
-                fixed inset-0 bg-background/98 backdrop-blur-sm z-50
-                flex flex-col items-center justify-center
-                transition-all duration-500 ease-in-out
-                ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}
+                fixed inset-0 bg-background z-50
+                ${isOpen ? 'block' : 'hidden'}
             `}
         >
             {/* Close Button */}
             <button 
                 onClick={onClose}
-                className="absolute top-6 right-6 text-2xl font-mono hover:text-primary transition-colors"
+                className="absolute top-4 right-4 p-4 text-2xl"
+                aria-label="Close menu"
             >
                 ×
             </button>
 
-            {/* Mobile Nav Items */}
-            <div className="flex flex-col items-center space-y-6">
+            {/* Navigation Links */}
+            <div className="flex flex-col items-center justify-center h-full">
                 {navItems.map((item) => (
                     <NavItem 
                         key={item} 

@@ -85,10 +85,10 @@ const ConnectPage = () => {
                                                  hover:text-primary transition-all duration-300 
                                                  hover:scale-[1.02] hover:-rotate-1"
                                     >
-                                        <link.icon className="w-5 h-5 opacity-0 -translate-x-2 transition-all 
-                                                            duration-300 group-hover:opacity-100 
-                                                            group-hover:translate-x-0" />
                                         <span>{link.title}</span>
+                                        <link.icon className="w-5 h-5 opacity-0 translate-x-2 transition-all 
+                                                           duration-300 group-hover:opacity-100 
+                                                           group-hover:translate-x-0" />
                                     </a>
                                     <p className="font-serif text-text/70 mt-1">
                                         {link.description}

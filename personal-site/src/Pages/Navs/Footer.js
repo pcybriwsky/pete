@@ -2,6 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { BsFillEnvelopeFill, BsFillHeartFill } from 'react-icons/bs';
 import { SiSubstack, SiReact, SiP5Dotjs, SiVercel } from 'react-icons/si';
 import { AiFillInstagram, AiFillTwitterCircle, AiFillLinkedin } from 'react-icons/ai';
+import { 
+    RiInstagramLine,
+    RiTwitterLine,
+    RiGithubLine,
+    RiLinkedinLine,
+    RiMailLine,
+    RiCalendarLine,
+} from 'react-icons/ri';
 import { FaGithub, FaDatabase } from 'react-icons/fa';
 import { WiDaySunny, WiCloudy, WiRain, WiSnow, WiThunderstorm, WiDust, WiNightClear, WiNightCloudy } from 'react-icons/wi';
 
@@ -102,32 +110,32 @@ const Footer = () => {
                             <a href='mailto:pete@ngenart.com' 
                                className="text-background hover:text-background/90 transition-all duration-300 hover:scale-[1.02] hover:-rotate-3"
                                title="Email">
-                                <BsFillEnvelopeFill className='w-6 h-6' />
-                            </a>
-                            <a href='https://substack.com/@petecybriwsky' 
-                               className="text-background hover:text-background/90 transition-all duration-300 hover:scale-[1.02] hover:rotate-3"
-                               title="Substack">
-                                <SiSubstack className='w-6 h-6' />
+                                <RiMailLine className='w-6 h-6' />
                             </a>
                             <a href="https://www.instagram.com/_re_pete/" 
                                className="text-background hover:text-background/90 transition-all duration-300 hover:scale-[1.02] hover:-rotate-3"
                                title="Instagram">
-                                <AiFillInstagram className='w-6 h-6' />
+                                <RiInstagramLine className='w-6 h-6' />
                             </a>
                             <a href="https://twitter.com/_re_pete" 
                                className="text-background hover:text-background/90 transition-all duration-300 hover:scale-[1.02] hover:rotate-3"
                                title="Twitter">
-                                <AiFillTwitterCircle className='w-6 h-6' />
+                                <RiTwitterLine className='w-6 h-6' />
                             </a>
                             <a href="https://www.linkedin.com/in/pete-cybriwsky/" 
                                className="text-background hover:text-background/90 transition-all duration-300 hover:scale-[1.02] hover:-rotate-3"
                                title="LinkedIn">
-                                <AiFillLinkedin className='w-6 h-6' />
+                                <RiLinkedinLine className='w-6 h-6' />
                             </a>
                             <a href="https://github.com/pcybriwsky" 
                                className="text-background hover:text-background/90 transition-all duration-300 hover:scale-[1.02] hover:rotate-3"
                                title="GitHub">
-                                <FaGithub className='w-6 h-6' />
+                                <RiGithubLine className='w-6 h-6' />
+                            </a>
+                            <a href='https://substack.com/@petecybriwsky' 
+                               className="text-background hover:text-background/90 transition-all duration-300 hover:scale-[1.02] hover:rotate-3"
+                               title="Substack">
+                                <SiSubstack className='w-5 h-6' />
                             </a>
                         </div>
                     </div>
@@ -136,7 +144,7 @@ const Footer = () => {
                     {weather && (
                         <div className="text-center laptop:text-right font-mono">
                             <div className="flex flex-col items-center laptop:items-end gap-1">
-                                <span className="text-sm">pete is in new york where conditions are</span>
+                                <span className="text-sm">conditions in new york</span>
                                 <div className="flex items-center gap-2">
                                     {getWeatherIcon(weather.weather[0]?.id)}
                                     <span>{Math.round(weather.main?.temp)}°F</span>

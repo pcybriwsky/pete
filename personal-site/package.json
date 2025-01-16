@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
     "@p5-wrapper/react": "^4.3.2",
     "@tabler/icons-react": "^3.28.1",
