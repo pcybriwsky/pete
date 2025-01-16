@@ -106,14 +106,33 @@ const Flowfield = (p) => {
     }
   };
   
+  let gridSizeSlider, cellSizeSlider;
+
   p.setup = () => {
     const parentWidth = p.canvas.parentElement.offsetWidth;
-    const parentHeight = p.canvas.parentElement.offsetWidth;
+    const parentHeight = p.canvas.parentElement.offsetHeight;
+
     p.createCanvas(parentWidth, parentHeight);
     p.pixelDensity(2);
+    gridSizeSlider = p.createSlider(p.width * 0.5, p.width * 0.9, p.width * 0.75);
+    gridSizeSlider.position(p.width / 2 - 100, parentHeight + 20); // Position below the canvas
+    gridSizeSlider.style('width', '200px');
+    gridSizeSlider.input(() => {
+      gridSize = gridSizeSlider.value(); // Update grid size dynamically
+      console.log(`Grid Size set to: ${gridSize}`);
+    });
     
-    // p.frameRate(0.5);
-    p.noLoop();
+    // Create cell size slider
+    cellSizeSlider = p.createSlider(10, 50, cellSize);
+    cellSizeSlider.position(p.width / 2 - 100, parentHeight + 60); // Position below the canvas
+    cellSizeSlider.style('width', '200px');
+    cellSizeSlider.input(() => {
+      cellSize = cellSizeSlider.value(); // Update cell size dynamically
+      console.log(`Cell Size set to: ${cellSize}`);
+    });
+    
+    // p.noLoop();
+    p.frameRate(0.5);
     
   };
 
@@ -139,8 +158,8 @@ const Flowfield = (p) => {
   };
 
   p.draw = () => {
-    gridSize = p.width * 0.85;
-    cellSize = p.random(10, 15);
+    gridSize = gridSizeSlider.value();
+    cellSize = cellSizeSlider.value();
     cellPadding = 0.5;
     gridPadding = (p.width - gridSize) / 2;
     rows = p.height / cellSize;
@@ -282,6 +301,10 @@ const Flowfield = (p) => {
     const parentWidth = p.canvas.parentElement.offsetWidth;
     const parentHeight = p.canvas.parentElement.offsetHeight;
     p.resizeCanvas(parentWidth, parentHeight);
+    
+    // Reposition buttons when the window is resized
+    gridSizeSlider.position(p.width / 2 - 100, parentHeight + 20);
+    cellSizeSlider.position(p.width / 2 - 100, parentHeight + 60);
   };
 };
 
