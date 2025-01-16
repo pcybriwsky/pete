@@ -25,7 +25,7 @@ const RePetePage = () => {
                             </div>
                         </div>
                         <div className='flex items-center justify-center laptop:justify-end'>
-                            <img className="w-[350px] h-[350px] rounded-full shadow-2xl" src={require("../Assets/Images/headshot.png")} alt="Pete Cybriwsky" />
+                            <img className="laptop:w-[300px] laptop:h-[300px] w-[200px] h-[200px] rounded-full shadow-2xl" src={require("../Assets/Images/headshot.png")} alt="Pete Cybriwsky" />
                         </div>
                     </div>
 
