@@ -174,19 +174,6 @@ const RePetePage = () => {
                             </ul>
                         </div>
                     </section>
-
-                    {/* Contact */}
-                    <section>
-                        <h2 className="text-3xl font-mono text-primary mb-8">Connect</h2>
-                        <div className="prose max-w-none font-serif">
-                            <p className="mb-6">
-                                Open to collaborations and conversations about data art, creative coding, or potential projects. 
-                                Find me on <a href="https://instagram.com/_re_pete" className="text-primary font-mono">@_re_pete</a>, 
-                                <a href="https://twitter.com/_re_pete" className="text-primary font-mono ml-1">@_re_pete</a>, 
-                                or via <a href="mailto:pete@ngenart.com" className="text-primary font-mono">pete@ngenart.com</a>
-                            </p>
-                        </div>
-                    </section>
                 </div>
             </FadeIn>
         </div>
