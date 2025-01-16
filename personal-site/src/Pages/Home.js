@@ -58,7 +58,7 @@ const NavItem = ({ label }) => {
 
 const Landing = () => {
     const navItems = ["work", "art", "re:Pete", "contact"];
-    const roles = ["Full-Stack & iOS Developer", "Data Artist", "Entrepreneur"];
+    const roles = ["Data Artist", "Full-Stack & iOS Developer"];
 
     return (
         <div className="min-h-screen flex flex-col justify-center px-6" id="top">
@@ -91,10 +91,10 @@ const Landing = () => {
                         ))}
                     </div>
                     
-                    <p className="font-serif text-lg laptop:text-xl mb-8 leading-relaxed">
-                        I'm an entrepreneur and artist working at the intersection of data, art, and technology. 
-                        <br className="hidden laptop:block" />
-                        <br className="hidden laptop:block" />
+                    <p className="font-serif text-base laptop:text-xl mb-8 leading-relaxed">
+                        I'm an entrepreneur working at the intersection of data, art, and technology. 
+                        <br className="laptop:block" />
+                        <br className="laptop:block" />
                         I build viral apps that help millions express themselves through their data, and partner 
                         with companies to tell compelling stories with theirs.
                     </p>

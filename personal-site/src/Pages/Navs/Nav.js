@@ -38,6 +38,9 @@ const NavItem = ({ label, isMobile = false, onClick }) => {
         e.preventDefault();
         if (onClick) onClick();
         
+        // Scroll to top before navigation
+        window.scrollTo(0, 0);
+        
         switch(label.toLowerCase()) {
             case 're:pete':
                 navigate('/about');
@@ -169,7 +172,7 @@ const Nav = () => {
     return (
         <>
             <nav className={`${navColor} sticky top-0 transition-all duration-300 z-40`}>
-                <div className='mx-auto w-[80%] flex justify-between items-center py-[10px]'>
+                <div className='mx-auto w-[90%] desktop:w-[85%] flex justify-between items-center py-[10px]'>
                     <a href='/' className='scroll-smooth'>
                         <Logo />
                     </a>

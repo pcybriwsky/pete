@@ -4,6 +4,7 @@ import { Route, Routes } from "react-router-dom"
 import './App.css';
 import WorkPage from './Pages/WorkPage';
 import ArtPiecePage from './Pages/ArtPiecePage';
+import ScrollToTop from './Components/ScrollToTop';
 
 const Home = lazy(() => import("./Pages/Home"))
 const Footer = lazy(() => import("./Pages/Navs/Footer"))
@@ -17,6 +18,7 @@ const ConnectPage = lazy(() => import("./Pages/ConnectPage"))
 function App() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
+      <ScrollToTop />
       <Nav />
       <Routes>
         <Route path="/" element={<Home />} />
