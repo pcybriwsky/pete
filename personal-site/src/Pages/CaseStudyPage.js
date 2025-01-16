@@ -18,7 +18,7 @@ const AnimatedLink = ({ href, children, className = "", isExternal = false }) =>
         >
             <span className="font-mono opacity-0 -translate-x-2 transition-all duration-300 
                            group-hover:opacity-100 group-hover:translate-x-0">
-                →
+                >
             </span>
             {children}
         </a>
@@ -64,7 +64,7 @@ const CaseStudyPage = () => {
             link: "https://apps.apple.com/us/app/day-by-data/id6737629704",
             timeline: "Dec 2024 - Present",
             metrics: [
-                "1000+ downloads in first month since launch",
+                "1000+ downloads in two weeks post-launch",
                 "4.9 star rating on App Store"
             ],
             technicalDetails: {
@@ -83,7 +83,7 @@ const CaseStudyPage = () => {
         },
         'moon-teller': {
             title: "The Moon Teller",
-            headerImage: null,
+            headerImage: require("../Assets/Images/MoonTellerPhone.png"),
             skills: ["p5.js", "AI", "Web Development", "Third-Party Integrations", "Cultural Design", "Music Industry"],
             description: "An interactive experience for Warner Music Group's Lunar New Year campaign, combining cultural elements with music discovery to drive playlist engagement and newsletter signups.",
             link: "https://themoonteller.com",
@@ -109,7 +109,7 @@ const CaseStudyPage = () => {
         },
         'rex-fit': {
             title: "Rex.Fit",
-            headerImage: null,
+            headerImage: require("../Assets/Images/RexFitNutritionFactsPhone.png"),
             skills: ["Processing", "Google Cloud", "Data Visualization", "Fitness Tech", "Brand Design", "White Label"],
             description: "Designed and built custom fitness tracking visualizations for Rex.Fit (Y Combinator W23) WhatsApp chatbot, using a \"Nutrition Facts\"-inspired approach for clarity and white label flexibility.",
             link: "https://rex.fit",
@@ -154,7 +154,7 @@ const CaseStudyPage = () => {
                         {project.title}
                     </h1>
                     <div className="font-mono text-sm text-text/70 mb-8">
-                        {project.timeline} · Present
+                        {project.timeline}
                     </div>
 
                     {/* Visit Project Link */}
@@ -167,7 +167,7 @@ const CaseStudyPage = () => {
                     </AnimatedLink>
 
                     {/* Main Image */}
-                    <div className="w-full h-96 bg-cream-light rounded-lg overflow-hidden mb-8 transition-transform duration-500 hover:scale-[1.01]">
+                    <div className="w-full h-full bg-cream-light rounded-lg overflow-hidden mb-8 transition-transform duration-500 hover:scale-[1.01]">
                         {project.headerImage ? (
                             <img 
                                 src={project.headerImage} 
@@ -196,7 +196,7 @@ const CaseStudyPage = () => {
                                 
                                 return (
                                     <li key={index} className="flex items-start gap-3 group">
-                                        <span className="font-mono transition-transform duration-300 group-hover:rotate-12">→</span>
+                                        <span className="font-mono text-primary transition-transform duration-300 group-hover:rotate-12">></span>
                                         <span 
                                             className="font-serif"
                                             dangerouslySetInnerHTML={{ __html: formattedMetric }}
@@ -214,7 +214,7 @@ const CaseStudyPage = () => {
                         <ul className="space-y-2">
                             {project.technicalDetails.bullets.map((bullet, index) => (
                                 <li key={index} className="flex items-start gap-3 group">
-                                    <span className="font-mono transition-transform duration-300 group-hover:rotate-12">→</span>
+                                    <span className="font-mono text-primary transition-transform duration-300 group-hover:rotate-12">></span>
                                     <span className="font-serif">{bullet}</span>
                                 </li>
                             ))}
@@ -222,8 +222,14 @@ const CaseStudyPage = () => {
                     </div>
 
                     {/* Skills */}
-                    <div className="font-mono text-sm text-text/70 mb-12">
-                        {project.skills.join(" · ")}
+                    <div className="flex flex-wrap gap-2 mb-12">
+                        {project.skills.map((skill, index) => (
+                            <span key={index} 
+                                  className="font-mono text-xs px-2 py-1 bg-cream-light 
+                                           text-text/70 rounded">
+                                {skill}
+                            </span>
+                        ))}
                     </div>
 
                     {/* Challenges & Learnings */}
@@ -233,13 +239,6 @@ const CaseStudyPage = () => {
                             <p>{project.challenges}</p>
                             <p>{project.learnings}</p>
                         </div>
-                    </div>
-
-                    {/* Footer Links */}
-                    <div className="flex gap-6 justify-center">
-                        <AnimatedLink href="https://instagram.com/_re_pete" isExternal>Instagram</AnimatedLink>
-                        <AnimatedLink href="https://twitter.com/_re_pete" isExternal>Twitter</AnimatedLink>
-                        <AnimatedLink href="mailto:pete@ngenart.com" isExternal>Email</AnimatedLink>
                     </div>
                 </div>
             </FadeIn>

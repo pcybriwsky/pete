@@ -1,50 +1,76 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { BsLightning, BsPalette, BsPerson, BsEnvelope } from 'react-icons/bs';
 
 const Logo = () => {
-    const [isHovered, setIsHovered] = useState(false);
-
     return (
-        <div
-            onMouseOver={() => setIsHovered(true)}
-            onMouseOut={() => setIsHovered(false)}
-            className='flex items-center group'
-        >
+        <div className='group flex items-center transition-all duration-300 hover:scale-[1.02] hover:-rotate-1'>
             <span className='text-2xl font-mono text-[#0a0a0a]'>:</span>
             <span className='text-2xl font-mono bg-gradient-to-r from-primary via-secondary to-accent bg-[length:200%_auto] animate-gradient-fast bg-clip-text text-transparent'>
                 P
             </span>
-            <span 
-                className={`
-                    text-2xl
-                    font-mono
-                    transform
-                    transition-all
-                    duration-300
-                    ease-out
-                    ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}
-                `}
-            >
+            <span className='text-2xl font-mono opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0'>
                 (ete)
             </span>
         </div>
     );
 };
 
+const getNavIcon = (label) => {
+    switch (label.toLowerCase()) {
+        case 'work':
+            return <BsLightning className="w-4 h-4" />;
+        case 'art':
+            return <BsPalette className="w-4 h-4" />;
+        case 're:pete':
+            return <BsPerson className="w-4 h-4" />;
+        case 'contact':
+            return <BsEnvelope className="w-4 h-4" />;
+        default:
+            return null;
+    }
+};
+
 const NavItem = ({ label, isMobile = false, onClick }) => {
-    const href = label === "re:Pete" ? "/about" : `#${label}`;
+    const navigate = useNavigate();
+    
+    const handleClick = (e) => {
+        e.preventDefault();
+        if (onClick) onClick(); // Close mobile menu if needed
+        
+        switch(label.toLowerCase()) {
+            case 're:pete':
+                navigate('/about');
+                break;
+            case 'work':
+                navigate('/work');
+                break;
+            case 'art':
+                navigate('/art');
+                break;
+            case 'contact':
+                navigate('/connect');
+                break;
+            default:
+                break;
+        }
+    };
     
     return (
-        <a 
-            href={href}
-            onClick={onClick}
+        <button 
+            onClick={handleClick}
             className={`
-                font-mono text-lg hover:text-primary transition-colors duration-300
-                ${isMobile ? 'text-2xl py-4' : ''}
+                group inline-flex items-center gap-2 font-mono hover:text-primary 
+                transition-all duration-300 hover:scale-[1.02] hover:-rotate-1
+                ${isMobile ? 'text-2xl py-4' : 'text-sm'}
             `}
         >
+            <span className="opacity-0 -translate-x-2 transition-all duration-300 
+                           group-hover:opacity-100 group-hover:translate-x-0">
+                {getNavIcon(label)}
+            </span>
             {label}
-        </a>
+        </button>
     );
 };
 

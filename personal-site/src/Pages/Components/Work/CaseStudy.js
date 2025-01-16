@@ -7,7 +7,7 @@ const CaseStudy = ({ title, headerImage, skills, description, link, id }) => {
     
     return (
         <FadeIn>
-            <Link to={`/projects/${slug}`} className="block">
+            <Link to={`/work/${slug}`} className="block">
                 <article className="bg-white border border-text/10 rounded-lg overflow-hidden 
                                   transition-all duration-300 hover:border-text/20 hover:scale-[1.01]">
                     {/* Header Image */}

@@ -10,7 +10,7 @@ const RePetePage = () => {
                     <div className='grid grid-cols-1 laptop:grid-cols-2 gap-16 mb-20'>
                         <div>
                             <h1 className="text-5xl font-mono text-primary mb-8">
-                                re:Pete
+                                re<span className="text-text">:</span>Pete
                             </h1>
                             <div className="prose max-w-none font-serif">
                                 <p className="text-xl mb-6">
@@ -34,21 +34,80 @@ const RePetePage = () => {
                         <div className="prose max-w-none font-serif space-y-4">
                             <p className="flex items-start gap-3">
                                 <span className="text-primary font-mono text-xl">></span>
-                                Currently open to new projects! <a href="mailto:pete@ngenart.com?subject=Let's%20chat!" className="text-primary font-mono inline-flex items-center">Let's chat <span className="ml-1">(^-^)/</span></a>
+                                <p>
+                                Currently open to new projects! At a high-level, I do full-stack and iOS design and development with an emphasis on data visualization and personal expression. Interested in working together? <a href="mailto:pete@ngenart.com?subject=Let's%20chat!" className="text-primary font-mono">Let's chat :D</a>
+                                </p>
                             </p>
 
                             <p className="flex items-start gap-3">
                                 <span className="text-primary font-mono text-xl">></span>
+                                <p>
                                 Recently launched <a href="https://apps.apple.com/us/app/day-by-data/id6737629704" className="text-primary font-mono">Day by Data</a> on iOS and <a href="https://ngenart.com" className="text-primary font-mono">n-gen</a>, where we've helped millions visualize their personal data in new ways.
+                                </p>
                             </p>
                                 
                             <p className="flex items-start gap-3">
                                 <span className="text-primary font-mono text-xl">></span>
+                                <p>
                                 My latest installation <a href="https://datascience.virginia.edu/pages/nebulae-pete-cybriwsky" className="text-primary font-mono">Nebulae</a> is on display at UVA's School of Data Science, 
                                 where it received two awards for innovative data representation \\(^o^)/
+                                </p>
                             </p>
                         </div>
                     </section>
+
+                    {/* Skills */}
+                    <section className="mb-20">
+                        <h2 className="text-3xl font-mono text-primary mb-8">Important Skills</h2>
+                        <p className="font-serif text-text/70 italic mb-4">
+                            Some of these might be more useful than others ¯\_(ツ)_/¯
+                        </p>
+                        
+                        {/* Technical */}
+                        <div className="mb-8">
+                            <h3 className="font-mono text-primary text-xl mb-4">Technical</h3>
+                            <div className="flex flex-wrap gap-2">
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Swift</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">React</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Node.js</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Firebase</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Google Cloud</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Vercel</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Tailwind</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">JavaScript</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Python</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Processing</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">p5.js</span>
+                            </div>
+                        </div>
+
+                        {/* Creative */}
+                        <div className="mb-8">
+                            <h3 className="font-mono text-primary text-xl mb-4">Creative</h3>
+                            <div className="flex flex-wrap gap-2">
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Data Visualization</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Data Art</span>   
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Generative Art</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">UI/UX Design</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">App Design</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Widget Design</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Figma</span>
+                            </div>
+                        </div>
+
+                        {/* Life Skills */}
+                        <div className="mb-8">
+                            <h3 className="font-mono text-primary text-xl mb-4">Life Skills</h3>
+                            <div className="flex flex-wrap gap-2">
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Making a mean cup of coffee</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Writing letters (pen and paper)</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Text emoticon usage</span>
+                                <span className="font-mono text-xs px-2 py-1 bg-cream-light text-text/70 rounded">Picking up flowers</span>
+                            </div>
+                        </div>
+                    
+                    </section>
+
                     {/* Career Journey */}
                     <section className="mb-20">
                         <h2 className="text-3xl font-mono text-primary mb-8">The Journey So Far</h2>

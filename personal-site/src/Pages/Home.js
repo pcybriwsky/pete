@@ -1,20 +1,59 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import AboutMe from './Components/About/AboutMe';
-import Resources from './Components/Resources/Resources';
-import Work from './Components/Work/Work';
-import CaseStudies from './Components/Work/CaseStudies';
 import FadeIn from 'react-fade-in/lib/FadeIn';
+import { BsLightning, BsPalette, BsPerson, BsEnvelope } from 'react-icons/bs';
+
+const getNavIcon = (label) => {
+    switch (label.toLowerCase()) {
+        case 'work':
+            return <BsLightning className="w-4 h-4" />;
+        case 'art':
+            return <BsPalette className="w-4 h-4" />;
+        case 're:pete':
+            return <BsPerson className="w-4 h-4" />;
+        case 'contact':
+            return <BsEnvelope className="w-4 h-4" />;
+        default:
+            return null;
+    }
+};
 
 const NavItem = ({ label }) => {
-    const href = label === "re:Pete" ? "/about" : `#${label}`;
+    const navigate = useNavigate();
+    
+    const handleClick = (e) => {
+        e.preventDefault();
+        switch(label.toLowerCase()) {
+            case 're:pete':
+                navigate('/about');
+                break;
+            case 'work':
+                navigate('/work');
+                break;
+            case 'art':
+                navigate('/art');
+                break;
+            case 'contact':
+                navigate('/connect');
+                break;
+            default:
+                break;
+        }
+    };
     
     return (
-        <a 
-            href={href}
-            className="font-mono text-lg hover:text-primary transition-colors duration-300"
+        <button 
+            onClick={handleClick}
+            className="group inline-flex items-center gap-2 font-mono hover:text-primary 
+                      transition-all duration-300 hover:scale-[1.02] hover:-rotate-1 text-sm"
         >
+            <span className="opacity-0 -translate-x-2 transition-all duration-300 
+                           group-hover:opacity-100 group-hover:translate-x-0">
+                {getNavIcon(label)}
+            </span>
             {label}
-        </a>
+        </button>
     );
 };
 
@@ -65,7 +104,8 @@ const Home = () => {
             <div className='w-[80%] mx-auto scroll-smooth'>
                 <Landing />
                 <div id="work">
-                    <CaseStudies />
+                    {/* Comment out the CaseStudies section */}
+                    {/* <CaseStudies /> */}
                 </div>
             </div>
         </div>
