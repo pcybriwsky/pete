@@ -33,11 +33,18 @@ module.exports = {
         'gradient-shift': {
           '0%, 100%': { 'background-position': '0% center' },
           '50%': { 'background-position': '100% center' }
+        },
+        'shake': {
+        '0%, 100%': { transform: 'rotate(0deg)' },
+        '25%': { transform: 'rotate(-2deg)' },
+          '75%': { transform: 'rotate(2deg)' }
         }
       },
       animation: {
         'gradient-dance': 'gradient-dance 12s ease infinite',
-        'gradient-fast': 'gradient-shift 2s linear infinite'
+        'gradient-fast': 'gradient-shift 2s linear infinite',
+        'shake': 'shake 0.5s ease-in-out'
+
       },
       backgroundImage: {
         'dancing-gradient': 'linear-gradient(45deg, #E6394644 0%, #fefefe33 33%, #fefefe33 66%, #F4A26144 100%)',
