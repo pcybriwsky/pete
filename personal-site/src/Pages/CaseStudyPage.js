@@ -32,7 +32,7 @@ const CaseStudyPage = () => {
     const projectDetails = {
         'ngenart': {
             title: "ngenart.com",
-            headerImage: require("../Assets/Images/ngenDNAPhone.png"),
+            headerImage: require("../Assets/Images/ngenFrameGeneric.png"),
             skills: ["React", "Node.js", "Firebase", "p5.js", "Data Visualization", "Viral Marketing", "SEO", "Spotify API", "Strava API"],
             description: "A viral web app that turned 9M people's Spotify and Strava data into art, inspiring TikTok trends like \"Spotify DNA\". My first attempt at representing personal data as art.",
             link: "https://ngenart.com",
@@ -175,6 +175,14 @@ const CaseStudyPage = () => {
         <div className="min-h-screen bg-background">
             <FadeIn>
                 <div className="max-w-4xl mx-auto px-4 py-12">
+                    {/* Back Button */}
+                    <a 
+                        href="/work" 
+                        className="block mb-8 text-sm text-primary hover:text-primary/70 hover:scale-101 transition-all duration-300 font-mono hover:rotate-[-1deg]"
+                    >
+                        Back to other cases
+                    </a>
+
                     {/* Project Title & Timeline */}
                     <h1 className="font-mono text-primary text-2xl mb-2">
                         {project.title}
@@ -193,7 +201,7 @@ const CaseStudyPage = () => {
                     </AnimatedLink>
 
                     {/* Main Image */}
-                    <div className="w-full aspect-[21/9] bg-cream-light rounded-lg overflow-hidden mb-8 
+                    <div className="w-full aspect-[16/9] bg-cream-light rounded-lg overflow-hidden mb-8 
                                     transition-transform duration-500 hover:scale-[1.01]">
                         {project.headerImage ? (
                             <img 

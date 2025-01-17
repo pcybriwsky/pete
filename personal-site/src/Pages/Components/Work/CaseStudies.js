@@ -6,7 +6,7 @@ const CaseStudies = () => {
         {
             id: "ngenart",
             title: "ngenart.com",
-            headerImage: require("../../../Assets/Images/ngenFrameGeneric.png"),
+            headerImage: require("../../../Assets/Images/ngenDNAPhone.png"),
             skills: ["React", "Node.js", "Firebase", "p5.js", "Data Visualization", "Viral Marketing"],
             description: "A viral web app that turned 9M people's Spotify and Strava data into art, inspiring TikTok trends like \"Spotify DNA\".",
             link: "https://ngenart.com"
@@ -15,7 +15,7 @@ const CaseStudies = () => {
             id: "moon-teller",
             title: "The Moon Teller",
             headerImage: require("../../../Assets/Images/moonTellerMacBook.png"),
-            skills: ["p5.js", "AI", "Web Development", "Cultural Design"],
+            skills: ["p5.js", "AI", "Web Development", "Design", "Firebase"],
             description: "An interactive experience I created for Warner Music Group's Lunar New Year 2025 campaign, combining cultural elements with music discovery.",
             link: "https://themoonteller.com"
         },
