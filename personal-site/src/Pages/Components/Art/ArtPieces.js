@@ -6,8 +6,8 @@ const artPiecesData = [
         id: 'nebulae',
         title: 'Nebulae',
         description: 'An award-winning interactive installation that transforms environmental data into evolving cosmic phenomena.',
-        thumbnail: require('../../../Assets/Images/nebulae.png'),
-        date: '2023',
+        thumbnail: require('../../../Assets/Images/nebulaePete.jpeg'),
+        date: '2024',
         medium: 'Interactive Data Art Installation',
         fullDescription: `Nebulae is an interactive data visualization installation that transforms live environmental data 
                          into mesmerizing cosmic phenomena. The piece took home two awards in the inaugural Data is Art 
@@ -21,7 +21,7 @@ const artPiecesData = [
                          
                          The piece maintains a historical record of its evolution, allowing viewers to explore how environmental 
                          patterns have shaped the visualization over time through an interactive timelapse feature.`,
-        dimensions: '2ft x 6ft',
+        dimensions: '2ft x 4ft',
         location: 'UVA School of Data Science',
         exhibition: 'May 2024 - December 2024',
         awards: [

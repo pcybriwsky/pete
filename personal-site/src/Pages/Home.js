@@ -58,7 +58,7 @@ const NavItem = ({ label }) => {
 
 const Landing = () => {
     const navItems = ["work", "art", "re:Pete", "contact"];
-    const roles = ["Full-Stack & iOS Developer", "Data Artist"];
+    const roles = ["Full-Stack Web & iOS Developer", "Data Artist"];
 
     return (
         <div className="min-h-screen flex flex-col justify-center px-6" id="top">

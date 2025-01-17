@@ -32,7 +32,7 @@ const CaseStudyPage = () => {
     const projectDetails = {
         'ngenart': {
             title: "ngenart.com",
-            headerImage: null,
+            headerImage: require("../Assets/Images/ngenDNAPhone.png"),
             skills: ["React", "Node.js", "Firebase", "p5.js", "Data Visualization", "Viral Marketing", "SEO", "Spotify API", "Strava API"],
             description: "A viral web app that turned 9M people's Spotify and Strava data into art, inspiring TikTok trends like \"Spotify DNA\". My first attempt at representing personal data as art.",
             link: "https://ngenart.com",
@@ -52,13 +52,26 @@ const CaseStudyPage = () => {
                     "Designed processing pipeline handling millions of daily requests"
                 ]
             },
-            images: [],
+            images: [
+                {
+                    title: "Viral Growth",
+                    src: require("../Assets/Images/ngenDNATrend.png"),
+                    caption: "ngen took off with several trends, including Spotify DNA which had 4M+ users and 10M+ art pieces created, leading to viral TikTok posts and tutorials",
+                    size: "large"
+                },
+                {
+                    title: "Cult Classics",
+                    src: require("../Assets/Images/ngenReceiptsReddit.png"),
+                    caption: "Specific outputs would go viral in different subreddits for their innovative feature design across Strava and Spotify, leading to top posts in respective communities",
+                    size: "large"
+                }
+            ],
             challenges: "Working solo was both rewarding and daunting - especially when things would break at 3am. I had to learn quickly how to make the right technical decisions that wouldn't come back to bite me as more people started using the platform.",
             learnings: "Looking back, there's a lot I would do differently with the UI/UX. But those mistakes taught me invaluable lessons about building better user experiences. I also learned the hard way about which systems actually scale well and how to keep infrastructure costs from exploding - turns out processing data client-side was a game-changer."
         },
         'day-by-data': {
             title: "Day By Data",
-            headerImage: null,
+            headerImage: require("../Assets/Images/DayByDataHome.png"),
             skills: ["iOS", "Swift", "WidgetKit", "MusicKit", "HealthKit", "p5.js", "WebKit", "Spotify API"],
             description: "My first iOS app that turns your Apple Health, Music, and other data into beautiful art and widgets. Released December 2024.",
             link: "https://apps.apple.com/us/app/day-by-data/id6737629704",
@@ -77,7 +90,20 @@ const CaseStudyPage = () => {
                     "Designed for iOS widgets and sharing features"
                 ]
             },
-            images: [],
+            images: [
+                {
+                    title: "Receipt Design",
+                    src: require("../Assets/Images/DayByDataReceiptMockup.png"),
+                    caption: "Allow users to visualize their step data as receipts, totalling their steps for the month, year, and all-time",
+                    size: "large"
+                },
+                {
+                    title: "Widget Design",
+                    src: require("../Assets/Images/dayByDataWidgets.png"),
+                    caption: "Sleep and distance data visualized side-by-side in iOS widgets, making personal data both beautiful and glanceable",
+                    size: "large"
+                }
+            ],
             challenges: "Coming from web development, iOS and Swift were completely new territories. The learning curve was steep - especially with Apple's frameworks and strict App Store guidelines. It took a lot of submissions to get the first version approved lol.",
             learnings: "Once I got comfortable with Swift and iOS development, I fell in love with the ecosystem. It's opened up so many ideas for future apps. Currently working on a pro version with more features, but already excited about building more iOS apps. Give it a download and let me know what you think!"
         },
@@ -167,12 +193,13 @@ const CaseStudyPage = () => {
                     </AnimatedLink>
 
                     {/* Main Image */}
-                    <div className="w-full h-full bg-cream-light rounded-lg overflow-hidden mb-8 transition-transform duration-500 hover:scale-[1.01]">
+                    <div className="w-full aspect-[21/9] bg-cream-light rounded-lg overflow-hidden mb-8 
+                                    transition-transform duration-500 hover:scale-[1.01]">
                         {project.headerImage ? (
                             <img 
                                 src={project.headerImage} 
                                 alt={project.title} 
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover object-center"
                             />
                         ) : (
                             <div className="w-full h-full bg-gradient-to-br from-coral-light to-sand-light" />
@@ -240,6 +267,35 @@ const CaseStudyPage = () => {
                             <p>{project.learnings}</p>
                         </div>
                     </div>
+
+                    {/* Images */}
+                    {project.images && project.images.length > 0 && (
+                        <div className="space-y-16 mb-12">
+                            {project.images.map((image, index) => (
+                                <div key={index} className="space-y-4">
+                                    {/* Title and Caption */}
+                                    <div className="space-y-2">
+                                        <h3 className="font-mono text-primary text-lg">
+                                            {image.title}
+                                        </h3>
+                                        <p className="font-mono text-sm text-text/70">
+                                            {image.caption}
+                                        </p>
+                                    </div>
+                                    
+                                    {/* Image */}
+                                    <div className="bg-cream-light rounded-lg overflow-hidden 
+                                                transition-transform duration-500 hover:scale-[1.01]">
+                                        <img 
+                                            src={image.src} 
+                                            alt={image.caption} 
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </FadeIn>
         </div>
