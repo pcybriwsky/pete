@@ -15,6 +15,9 @@ const WorkPage = () => {
                             A collection of selected projects exploring data visualization, 
                             creative coding, and digital experiences.
                         </p>
+                        <p className="text-xl">
+                            I'm open to collaborating on interesting projects. Have something in mind? <a href="/contact" className="text-primary hover:underline">Reach out :P</a>.
+                        </p>
                     </div>
                     <CaseStudies />
                 </div>
