@@ -92,6 +92,12 @@ const CaseStudyPage = () => {
             },
             images: [
                 {
+                    title: "iMessage-inspired Onboarding",
+                    src: require("../Assets/Images/onboardingGIF.gif"),
+                    caption: "A playfully designed onboarding flow that mimics the user texting me like we're on iMessage. I like this feature a lot, and am still playing with ways to weave more playfulness into it.",
+                    size: "small"
+                },
+                {
                     title: "Receipt Design",
                     src: require("../Assets/Images/DayByDataReceiptMockup.png"),
                     caption: "Allow users to visualize their step data as receipts, totalling their steps for the month, year, and all-time",
@@ -99,10 +105,11 @@ const CaseStudyPage = () => {
                 },
                 {
                     title: "Widget Design",
-                    src: require("../Assets/Images/dayByDataWidgets.png"),
+                    src: require("../Assets/Images/widgetDesignMockup.png"),
                     caption: "Sleep and distance data visualized side-by-side in iOS widgets, making personal data both beautiful and glanceable",
                     size: "large"
                 }
+
             ],
             challenges: "Coming from web development, iOS and Swift were completely new territories. The learning curve was steep - especially with Apple's frameworks and strict App Store guidelines. It took a lot of submissions to get the first version approved lol.",
             learnings: "Once I got comfortable with Swift and iOS development, I fell in love with the ecosystem. It's opened up so many ideas for future apps. Currently working on a pro version with more features, but already excited about building more iOS apps. Give it a download and let me know what you think!"
@@ -292,12 +299,12 @@ const CaseStudyPage = () => {
                                     </div>
                                     
                                     {/* Image */}
-                                    <div className="bg-cream-light rounded-lg overflow-hidden 
+                                    <div className="rounded-lg overflow-hidden 
                                                 transition-transform duration-500 hover:scale-[1.01]">
                                         <img 
                                             src={image.src} 
                                             alt={image.caption} 
-                                            className="w-full h-full object-cover"
+                                            className={`w-full h-full ${image.size === "small" ? "w-[50%] mx-auto object-contain border border-text/10" : "object-cover"}`}
                                         />
                                     </div>
                                 </div>
