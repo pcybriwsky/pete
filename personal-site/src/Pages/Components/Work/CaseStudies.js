@@ -4,6 +4,14 @@ import CaseStudy from './CaseStudy';
 const CaseStudies = () => {
     const projects = [
         {
+            id: "day-by-data",
+            title: "Day By Data",
+            headerImage: require("../../../Assets/Images/DayByDataPhoneMockup.png"),
+            skills: ["iOS", "Swift", "WidgetKit", "MusicKit", "HealthKit", "p5.js"],
+            description: "My first iOS app that turns your Apple Health, Music, and other data into beautiful art and widgets. Released December 2024.",
+            link: "https://apps.apple.com/us/app/day-by-data/id6737629704"
+        },
+        {
             id: "ngenart",
             title: "ngenart.com",
             headerImage: require("../../../Assets/Images/ngenDNAPhone.png"),
@@ -26,14 +34,6 @@ const CaseStudies = () => {
             skills: ["Processing", "Google Cloud", "Data Visualization", "Fitness Tech"],
             description: "Designed and built custom fitness tracking visualizations for Rex.Fit (Y Combinator W23) WhatsApp chatbot, using a \"Nutrition Facts\"-inspired approach for clarity and white label flexibility.",
             link: "https://rex.fit"
-        },
-        {
-            id: "day-by-data",
-            title: "Day By Data",
-            headerImage: require("../../../Assets/Images/DayByDataPhoneMockup.png"),
-            skills: ["iOS", "Swift", "WidgetKit", "MusicKit", "HealthKit", "p5.js"],
-            description: "My first iOS app that turns your Apple Health, Music, and other data into beautiful art and widgets. Released December 2024.",
-            link: "https://apps.apple.com/us/app/day-by-data/id6737629704"
         }
     ];
 
