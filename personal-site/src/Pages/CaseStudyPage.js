@@ -71,7 +71,7 @@ const CaseStudyPage = () => {
         },
         'day-by-data': {
             title: "Day By Data",
-            headerImage: require("../Assets/Images/DayByDataHome.png"),
+            headerImage: require("../Assets/Images/DayByDataPhoneMockup.png"),
             skills: ["iOS", "Swift", "WidgetKit", "MusicKit", "HealthKit", "p5.js", "WebKit", "Spotify API"],
             description: "My first iOS app that turns your Apple Health, Music, and other data into beautiful art and widgets. Released December 2024.",
             link: "https://apps.apple.com/us/app/day-by-data/id6737629704",

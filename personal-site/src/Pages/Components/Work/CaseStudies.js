@@ -6,7 +6,7 @@ const CaseStudies = () => {
         {
             id: "day-by-data",
             title: "Day By Data",
-            headerImage: require("../../../Assets/Images/DayByDataPhoneMockup.png"),
+            headerImage: require("../../../Assets/Images/widgetDesignMockupZoomOut.png"),
             skills: ["iOS", "Swift", "WidgetKit", "MusicKit", "HealthKit", "p5.js"],
             description: "My first iOS app that turns your Apple Health, Music, and other data into beautiful art and widgets. Released December 2024.",
             link: "https://apps.apple.com/us/app/day-by-data/id6737629704"
