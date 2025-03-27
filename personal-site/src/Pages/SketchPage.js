@@ -1,15 +1,11 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import P5Wrapper from './Components/Sketches/SketchComponent';
 
 const sketchMap = {
-  landscape: {
-    component: 'Landscape',
-    displayName: 'Landscape Generator'
-  },
   circles: {
-    component: 'Circles',
-    displayName: 'Interactive Circles'
+    component: 'circles',
+    displayName: 'Floating Circles'
   },
   hearts: {
     component: 'Hearts',
@@ -26,17 +22,29 @@ const sketchMap = {
   flowfield: {
     component: 'Flowfield',
     displayName: 'Flowfield'
+  },
+  sun: {
+    component: 'Sun',
+    displayName: 'Sun'
   }
 };
 
 const SketchPage = () => {
   const { sketchName } = useParams();
+  const location = useLocation();
+  
+  console.log('Current params:', useParams());
+  console.log('Current path:', location.pathname);
+  console.log('sketchName:', sketchName);
+  
   const sketch = sketchMap[sketchName];
 
   if (!sketch) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-text text-xl">Sketch not found</p>
+        <p className="text-text text-xl">
+          Sketch "{sketchName}" not found. Available sketches: {Object.keys(sketchMap).join(', ')}
+        </p>
       </div>
     );
   }

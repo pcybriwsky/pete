@@ -6,13 +6,15 @@ import Landscape from './Landscape';
 import Wave from './Wave';
 import Sketchbook from './Sketchbook';
 import Flowfield from './Flowfield';
+import Sun from './SimpleSun';
 
 const sketchMap = {
   circles,
   Hearts,
   Wave,
   Sketchbook,
-  Flowfield
+  Flowfield,
+  Sun
 };
 
 const P5Wrapper = ({ sketch }) => {
