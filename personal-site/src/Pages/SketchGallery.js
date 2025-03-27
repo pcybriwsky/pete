@@ -37,6 +37,12 @@ const sketches = [
     title: 'Sun',
     description: 'A simple sun',
     instructions: 'Click and drag your mouse to create a sun'
+  },
+  {
+    id: 'sunAndMoon',
+    title: 'Sun and Moon',
+    description: 'A sun and moon',
+    instructions: 'Click and drag your mouse to create a sun and moon'
   }
 ];
 

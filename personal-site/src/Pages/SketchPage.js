@@ -26,6 +26,10 @@ const sketchMap = {
   sun: {
     component: 'Sun',
     displayName: 'Sun'
+  },
+  sunAndMoon: {
+    component: 'SunAndMoon',
+    displayName: 'Sun and Moon'
   }
 };
 

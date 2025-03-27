@@ -7,6 +7,7 @@ import Wave from './Wave';
 import Sketchbook from './Sketchbook';
 import Flowfield from './Flowfield';
 import Sun from './SimpleSun';
+import SunAndMoon from './SunAndMoon';
 
 const sketchMap = {
   circles,
@@ -14,7 +15,8 @@ const sketchMap = {
   Wave,
   Sketchbook,
   Flowfield,
-  Sun
+  Sun,
+  SunAndMoon
 };
 
 const P5Wrapper = ({ sketch }) => {
