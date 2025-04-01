@@ -38,6 +38,7 @@ const Sun = (p) => {
     
     p.createCanvas(canvasWidth, canvasHeight);
     p.colorMode(p.HSB, 360, 100, 100, 1);
+    p.pixelDensity(2);
     selectRandomPalette();
     isLinear = Math.random() < 0.5;
     setAlpha = Math.random() < 0.5;
@@ -47,7 +48,7 @@ const Sun = (p) => {
     circleSize = minCircleSize;
     
     noiseTexture = p.createGraphics(p.width, p.height);
-    generateNoiseTexture();
+    // generateNoiseTexture();
     
     p.noLoop();
     p.draw();
@@ -85,7 +86,7 @@ const Sun = (p) => {
 
   const generateNoiseTexture = () => {
     noiseTexture.loadPixels();
-    let increment = p.random(5, 8);
+    let increment = p.random(3,5);
 
     p.push();
     p.colorMode(p.RGB, 255, 255, 255, 1);
@@ -226,7 +227,7 @@ const Sun = (p) => {
     // Apply noise overlay
     p.push();
     p.blendMode(p.SCREEN);
-    p.image(noiseTexture, 0, 0);
+    // p.image(noiseTexture, 0, 0);
     p.pop();
   };
 
@@ -238,7 +239,7 @@ const Sun = (p) => {
     p.resizeCanvas(canvasWidth, canvasHeight);
     
     noiseTexture = p.createGraphics(p.width, p.height);
-    generateNoiseTexture();
+    // generateNoiseTexture();
     
     minCircleSize = p.width * 0.1;
     maxCircleSize = p.width * 0.4;

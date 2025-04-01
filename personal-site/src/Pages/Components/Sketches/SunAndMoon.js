@@ -36,7 +36,7 @@ const SunAndMoon = (p) => {
   let lineHeightDescription = 0;
   let logoSize = 0;
 
-  let bgColor = "#151c2a"; // Deep navy blue similar to the Asana image
+  let bgColor = "#2F5DA9"; // Deep navy blue similar to the Asana image
   let textColor = "#fffdf3";
 
   const newMoonColors = ['#7EA4FF', '#A3C8FA', '#F7AB8A']; // Sun
@@ -272,6 +272,23 @@ const SunAndMoon = (p) => {
       darkGraphic.stroke(textColor);
       darkGraphic.strokeWeight(1);
       darkGraphic.ellipse(0, -radius / 2, radius, radius);
+      darkGraphic.stroke(textColor + "08");
+      
+      let blueprintColumns = 50;
+      let squareSize = p.width / blueprintColumns;
+      let blueprintRows = Math.round(p.height / squareSize) + 1;
+
+      darkGraphic.push();
+      darkGraphic.translate(-p.width / 2, -p.height / 2);
+      for (let i = 0; i < blueprintRows; i++) {
+        darkGraphic.line(0, i * squareSize, p.width, i * squareSize);
+      }
+      
+      for (let i = 0; i < blueprintColumns; i++) {
+        darkGraphic.line(-squareSize / 2 + i * squareSize, 0, -squareSize / 2 + i * squareSize, p.height);
+      }
+      darkGraphic.pop();
+
       darkGraphic.stroke(textColor + "22");
       // darkGraphic.drawingContext.setLineDash([radius / 25, radius / 25]);
       darkGraphic.rectMode(p.CENTER);
