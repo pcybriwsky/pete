@@ -36,7 +36,7 @@ const P5Wrapper = ({ sketch }) => {
     };
   }, [sketch]);
 
-  return <div ref={sketchRef} className="w-full h-[800px] flex items-center justify-center" />;
+  return <div ref={sketchRef} className="w-full h-[full] flex items-center justify-center" />;
 };
 
 export default P5Wrapper;

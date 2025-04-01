@@ -54,10 +54,10 @@ const SketchPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <h1 className="text-primary font-serif italic text-2xl mb-8">
+    <div className="bg-background flex flex-col items-center justify-center">
+      {/* <h1 className="text-primary font-serif italic text-2xl mb-8">
         {sketch.displayName}
-      </h1>
+      </h1> */}
       <div className="w-full max-w-3xl mx-auto items-center justify-center aspect-[9/16]">
         <P5Wrapper sketch={sketch.component} />
       </div>
