@@ -11,7 +11,6 @@ const SunAndMoon = (p) => {
 
   // Moon phase colors
   const moonPhases = {
-    'Sun': ['#FF6B35', '#FF9F1C', '#FFD700', '#FF6B35'], // Warm circular gradient
     'Waxing Crescent': ['#F8D808', '#E66D7B', '#282962', '#F8D808'], // Yellow to pink to deep blue
     'First Quarter': ['#FDA2DA', '#7C47DB', '#0A26AC', '#FDA2DA'], // Pink to purple to deep blue
     'Waxing Gibbous': ['#00B7FF', '#FEF439', '#FF3030', '#00B7FF'], // Cyan to yellow to red
@@ -19,8 +18,17 @@ const SunAndMoon = (p) => {
     'Waning Gibbous': ['#FFDBD2', '#DC8169', '#134787', '#FFDBD2'], // Peach to coral to deep blue
     'Last Quarter': ['#30B1C9', '#FDDEE1', '#F9C6C8', '#30B1C9'], // Turquoise to pink
     'Waning Crescent': ['#F7C6FA', '#96B9EF', '#AFF4CB', '#F7C6FA'], // Light purple to blue to mint
-    'Sun': ['#FF6B35', '#FF9F1C', '#FFD700', '#FF6B35'] // Circular warm gradient
+    'Sun': ['#FF6B35', '#FF9F1C', '#FFD700', '#FF6B35'], // Circular warm gradient
+    'White': ['#FFFFFF', '#E8E9F2', '#D0D4E6', '#FFFFFF'], // More dramatic white to silver-blue gradient
+    'Gold': ['#FFD700', '#E6B800', '#BF9B30', '#FFD700'], // Shimmering gold
+    'Sapphire': ['#0D47A1', '#1565C0', '#0A2472', '#0D47A1'], // Deep sapphire blue
+    'Ruby': ['#D81B60', '#B71C1C', '#880E4F', '#D81B60'], // Rich ruby red
+    'Ebony': ['#424242', '#212121', '#1B1B1B', '#424242'], // Polished ebony black
+    'Emerald': ['#00695C', '#00897B', '#004D40', '#00695C'] // Deep emerald green
   };
+
+  let allDark = true;
+  let darkBg = '#000000';
 
   let lastWasDark = false;
   // Size multiplier will impact all other values based on canvas size
@@ -88,7 +96,7 @@ const SunAndMoon = (p) => {
     let seed = Math.floor(Math.random() * 1000);
     p.randomSeed(seed);
     p.noiseSeed(seed);
-    
+
     darkGraphic = p.createGraphics(p.width, p.height);
     darkGraphic.background(bgColor);
     darkGraphic.translate(p.width * 0.5, p.height * 0.5);
@@ -99,17 +107,25 @@ const SunAndMoon = (p) => {
   let sunScale = 2;
   let currentMoonPhase = 'Sun';
   let lastPeakReached = false;
-  
+
 
   p.draw = () => {
     p.background(bgColor);
-    
-    // Create steady oscillation with easing
-    let t = (Math.sin(p.frameCount * 0.01) + 1) / 2; // Convert to 0-1 range
-    
+
+    let t = 0;
+    if (isDevMode) {
+      t = (Math.sin(p.frameCount * 0.01) + 1) / 2; // Convert to 0-1 range
+    } else if (isMagic && magic.modules.light) {
+      // Get light reading and normalize to 0-1 range, then invert it
+      let currentReading = 1 - (magic.modules.light.brightness / 4095);
+      // Apply smooth easing (99% of previous value + 1% of new value)
+      lightValue = (lightValue * 0.9) + (currentReading * 0.1);
+      t = lightValue;
+    }
+
     // Apply easing function (smooth start and end)
     let eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    
+
     // Map to 0-100 range
     let graphicOpacity = eased * 255;
 
@@ -124,7 +140,7 @@ const SunAndMoon = (p) => {
       // Reset the peak detection once we drop below threshold
       lastPeakReached = false;
     }
-    
+
     // Draw Light Graphic
     p.push();
     selectedMoon = 'Sun';
@@ -167,24 +183,52 @@ const SunAndMoon = (p) => {
 
     p.translate(0, radius / 2)
     if (phase !== 'Empty') {
-      p.push();
-      p.translate(0, -radius);
-      let backgroundGradient = p.drawingContext.createLinearGradient(0, p.height, p.width, 0);
-      backgroundGradient.addColorStop(0, p.color(selectedMoonColors[0]));
-      backgroundGradient.addColorStop(0.3, p.color(selectedMoonColors[1]));
-      backgroundGradient.addColorStop(0.6, p.color(selectedMoonColors[2]));
-      backgroundGradient.addColorStop(1.0, p.color(selectedMoonColors[3]));
+      if (darkBg) {
+        let colors = moonPhases['White'];
+        p.push();
+        p.translate(0, -radius);
+        let backgroundGradient = p.drawingContext.createLinearGradient(0, p.height, p.width, 0);
+        backgroundGradient.addColorStop(0, p.color(colors[0] || '#FFFFFF'));
+        backgroundGradient.addColorStop(0.3, p.color(colors[1] || colors[0] || '#FFFFFF'));
+        backgroundGradient.addColorStop(0.6, p.color(colors[2] || colors[1] || '#FFFFFF'));
+        backgroundGradient.addColorStop(1.0, p.color(colors[3] || colors[0] || '#FFFFFF'));
 
-      p.drawingContext.fillStyle = backgroundGradient;
-      p.noStroke();
-      p.rect(-p.width / 2, -p.height / 2, p.width, p.height);
-      p.pop();
+        p.drawingContext.fillStyle = backgroundGradient;
+        p.noStroke();
+        p.rect(-p.width / 2, -p.height / 2, p.width, p.height);
+        p.pop();
+      } else {
+        p.push();
+        p.translate(0, -radius);
+        let backgroundGradient = p.drawingContext.createLinearGradient(0, p.height, p.width, 0);
+        backgroundGradient.addColorStop(0, p.color(selectedMoonColors[0] || '#FFFFFF'));
+        backgroundGradient.addColorStop(0.3, p.color(selectedMoonColors[1] || selectedMoonColors[0] || '#FFFFFF'));
+        backgroundGradient.addColorStop(0.6, p.color(selectedMoonColors[2] || selectedMoonColors[1] || '#FFFFFF'));
+        backgroundGradient.addColorStop(1.0, p.color(selectedMoonColors[3] || selectedMoonColors[0] || '#FFFFFF'));
+
+        p.drawingContext.fillStyle = backgroundGradient;
+        p.noStroke();
+        p.rect(-p.width / 2, -p.height / 2, p.width, p.height);
+        p.pop();
+      }
 
       // Draw a moon outline
       p.push();
       p.fill(bgColor);
+
+      // Layer multiple shadows using colors from our gradient
       p.drawingContext.shadowBlur = 100;
-      p.drawingContext.shadowColor = 'rgba(255, 255, 255, 1.0)';
+      p.drawingContext.shadowColor = p.color(selectedMoonColors[0]);
+      p.drawingContext.shadowOffsetX = 0;
+      p.drawingContext.shadowOffsetY = 0;
+
+      // Add second shadow layer
+      p.drawingContext.shadowBlur = 80;
+      p.drawingContext.shadowColor = p.color(selectedMoonColors[1]);
+
+      // Add third shadow layer with slightly different blur
+      p.drawingContext.shadowBlur = 60;
+      p.drawingContext.shadowColor = p.color(selectedMoonColors[2]);
 
       p.noFill();
       p.stroke(0);
@@ -225,10 +269,10 @@ const SunAndMoon = (p) => {
       const [x1, y1, x2, y2] = rotateGradient(randomAngle);
 
       let moonGradient = p.drawingContext.createLinearGradient(x1, y1, x2, y2);
-      moonGradient.addColorStop(0, p.color(selectedMoonColors[0]));
-      moonGradient.addColorStop(0.33, p.color(selectedMoonColors[1]));
-      moonGradient.addColorStop(0.66, p.color(selectedMoonColors[2]));
-      moonGradient.addColorStop(1.0, p.color(selectedMoonColors[3]));
+      moonGradient.addColorStop(0, p.color(selectedMoonColors[0] || '#FFFFFF'));
+      moonGradient.addColorStop(0.33, p.color(selectedMoonColors[1] || selectedMoonColors[0] || '#FFFFFF'));
+      moonGradient.addColorStop(0.66, p.color(selectedMoonColors[2] || selectedMoonColors[1] || '#FFFFFF'));
+      moonGradient.addColorStop(1.0, p.color(selectedMoonColors[3] || selectedMoonColors[0] || '#FFFFFF'));
 
 
       p.strokeWeight(radius / 5);
@@ -236,13 +280,49 @@ const SunAndMoon = (p) => {
       p.noStroke();
 
       // Apply the gradient fill
-      p.fill(bgColor);
-      p.drawingContext.fillStyle = moonGradient;
+
 
       p.strokeWeight(radius / 20);
-      p.drawingContext.shadowBlur = padding/2;
-      p.drawingContext.shadowColor = 'rgba(0, 0, 0, 0.25)'
-      p.ellipse(0, -radius / 2, radius, radius);
+      // p.noFill();
+      // p.drawingContext.shadowBlur = padding / 2;
+      // p.drawingContext.shadowColor = 'rgba(0, 0, 0, 0.25)'
+
+      if (allDark) {
+        p.fill(bgColor);
+        p.drawingContext.fillStyle = moonGradient;
+
+        p.drawingContext.shadowBlur = radius / 5;
+        p.drawingContext.shadowColor = p.color(selectedMoonColors[1] + "88");
+        p.drawingContext.shadowOffsetX = radius / 20;
+        p.drawingContext.shadowOffsetY = radius / 20;
+        p.ellipse(0, -radius / 2, radius, radius);
+
+        // Add second shadow layer
+        p.drawingContext.shadowBlur = radius / 5;
+        p.drawingContext.shadowColor = p.color(selectedMoonColors[1] + "88");
+        p.drawingContext.shadowOffsetX = -radius / 20;
+        p.drawingContext.shadowOffsetY = -radius / 20;
+        p.ellipse(0, -radius / 2, radius, radius);
+
+        // Add third shadow layer with slightly different blur
+        p.drawingContext.shadowBlur = radius / 5;
+        p.drawingContext.shadowColor = p.color(selectedMoonColors[2] + "88");
+        p.drawingContext.shadowOffsetX = radius / 20;
+        p.drawingContext.shadowOffsetY = -radius / 20;
+        p.ellipse(0, -radius / 2, radius, radius);
+
+        // Add fourth shadow layer with slightly different blur
+        p.drawingContext.shadowBlur = radius / 5;
+        p.drawingContext.shadowColor = p.color(selectedMoonColors[3] + "88");
+        p.drawingContext.shadowOffsetX = -radius / 20;
+        p.drawingContext.shadowOffsetY = radius / 20;
+        p.ellipse(0, -radius / 2, radius, radius);
+      } else {
+        p.noFill();
+        p.drawingContext.shadowBlur = padding / 2;
+        p.drawingContext.shadowColor = 'rgba(0, 0, 0, 0.25)'
+        p.ellipse(0, -radius / 2, radius, radius);
+      }
 
 
       p.push();
@@ -253,46 +333,52 @@ const SunAndMoon = (p) => {
           for (let a = 0; a < p.TWO_PI; a += 0.1) {
             let x = radius / 2 * p.cos(a);
             let y = radius / 2 * p.sin(a);
-            p.vertex(x, y - radius / 2);
+            // p.vertex(x, y - radius / 2);
           }
           break;
       }
       p.endShape();
 
-      
+
       p.pop()
-      
+
       p.pop();
     }
     else {
       darkGraphic.push();
       darkGraphic.translate(0, radius / 2);
       darkGraphic.noFill();
-      darkGraphic.background(bgColor);
+      if (allDark) {
+        darkGraphic.background(darkBg);
+      } else {
+        darkGraphic.background(bgColor);
+      }
       darkGraphic.stroke(textColor);
       darkGraphic.strokeWeight(1);
       darkGraphic.ellipse(0, -radius / 2, radius, radius);
-      darkGraphic.stroke(textColor + "08");
-      
-      let blueprintColumns = 50;
-      let squareSize = p.width / blueprintColumns;
-      let blueprintRows = Math.round(p.height / squareSize) + 1;
 
-      darkGraphic.push();
-      darkGraphic.translate(-p.width / 2, -p.height / 2);
-      for (let i = 0; i < blueprintRows; i++) {
-        darkGraphic.line(0, i * squareSize, p.width, i * squareSize);
-      }
-      
-      for (let i = 0; i < blueprintColumns; i++) {
-        darkGraphic.line(-squareSize / 2 + i * squareSize, 0, -squareSize / 2 + i * squareSize, p.height);
-      }
-      darkGraphic.pop();
+      if (!allDark) {
+        darkGraphic.stroke(textColor + "08");
+        let blueprintColumns = 50;
+        let squareSize = p.width / blueprintColumns;
+        let blueprintRows = Math.round(p.height / squareSize) + 1;
 
-      darkGraphic.stroke(textColor + "22");
-      // darkGraphic.drawingContext.setLineDash([radius / 25, radius / 25]);
-      darkGraphic.rectMode(p.CENTER);
-      darkGraphic.rect(0, -radius / 2, radius, radius);
+        darkGraphic.push();
+        darkGraphic.translate(-p.width / 2, -p.height / 2);
+        for (let i = 0; i < blueprintRows; i++) {
+          darkGraphic.line(0, i * squareSize, p.width, i * squareSize);
+        }
+
+        for (let i = 0; i < blueprintColumns; i++) {
+          darkGraphic.line(-squareSize / 2 + i * squareSize, 0, -squareSize / 2 + i * squareSize, p.height);
+        }
+        darkGraphic.pop();
+
+        darkGraphic.stroke(textColor + "22");
+        // darkGraphic.drawingContext.setLineDash([radius / 25, radius / 25]);
+        darkGraphic.rectMode(p.CENTER);
+        darkGraphic.rect(0, -radius / 2, radius, radius);
+      }
     }
   };
 }
