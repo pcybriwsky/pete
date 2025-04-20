@@ -8,6 +8,7 @@ import Sketchbook from './Sketchbook';
 import Flowfield from './Flowfield';
 import Sun from './SimpleSun';
 import SunAndMoon from './SunAndMoon';
+import Lenticular from './Lenticular';
 
 const sketchMap = {
   circles,
@@ -16,7 +17,8 @@ const sketchMap = {
   Sketchbook,
   Flowfield,
   Sun,
-  SunAndMoon
+  SunAndMoon,
+  Lenticular
 };
 
 const P5Wrapper = ({ sketch }) => {

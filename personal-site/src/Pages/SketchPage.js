@@ -30,6 +30,10 @@ const sketchMap = {
   sunAndMoon: {
     component: 'SunAndMoon',
     displayName: 'Sun and Moon'
+  },
+  lenticular: {
+    component: 'Lenticular',
+    displayName: 'Lenticular'
   }
 };
 

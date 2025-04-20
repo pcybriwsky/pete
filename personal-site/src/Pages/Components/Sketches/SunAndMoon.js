@@ -76,6 +76,10 @@ const SunAndMoon = (p) => {
     const moonPhaseNames = Object.keys(moonPhases);
     selectedMoon = moonPhaseNames[Math.floor(Math.random() * moonPhaseNames.length)];
     selectedMoonColors = moonPhases[selectedMoon];
+    moonColors1 = moonPhases[moonPhaseNames[Math.floor(Math.random() * moonPhaseNames.length)]];
+    moonColors2 = moonPhases[moonPhaseNames[Math.floor(Math.random() * moonPhaseNames.length)]];
+    moonColors3 = moonPhases[moonPhaseNames[Math.floor(Math.random() * moonPhaseNames.length)]];
+    // moonColors4 = moonPhases[moonPhaseNames[Math.floor(Math.random() * moonPhaseNames.length)]];
 
     p.pixelDensity(1);
 
@@ -101,12 +105,22 @@ const SunAndMoon = (p) => {
     darkGraphic.background(bgColor);
     darkGraphic.translate(p.width * 0.5, p.height * 0.5);
     darkGraphic.scale(sunScale);
-    p.drawMoon('Empty');
+    if (triMoon) {
+      p.drawTriMoon('Empty');
+    } else {
+      p.drawMoon('Empty');
+    }
   };
 
   let sunScale = 2;
   let currentMoonPhase = 'Sun';
   let lastPeakReached = false;
+  let moonColors1;
+  let moonColors2;
+  let moonColors3;
+  let moonColors4;
+
+  let triMoon = false;
 
 
   p.draw = () => {
@@ -134,7 +148,13 @@ const SunAndMoon = (p) => {
       const moonPhaseNames = Object.keys(moonPhases).filter(name => name !== currentMoonPhase);
       currentMoonPhase = moonPhaseNames[Math.floor(Math.random() * moonPhaseNames.length)];
       selectedMoonColors = moonPhases[currentMoonPhase];
-      selectedMoonColors.sort(() => Math.random() - 0.5);
+      selectedMoonColors.sort(() => Math.random() - 0.5)
+
+      moonColors1 = moonPhases[moonPhaseNames[Math.floor(Math.random() * moonPhaseNames.length)]];
+      moonColors2 = moonPhases[moonPhaseNames[Math.floor(Math.random() * moonPhaseNames.length)]];
+      moonColors3 = moonPhases[moonPhaseNames[Math.floor(Math.random() * moonPhaseNames.length)]];
+      // moonColors4 = moonPhases[moonPhaseNames[Math.floor(Math.random() * moonPhaseNames.length)]];
+
       lastPeakReached = true;
     } else if (eased < 0.9) {
       // Reset the peak detection once we drop below threshold
@@ -148,7 +168,11 @@ const SunAndMoon = (p) => {
     // selectedMoonColors = moonPhases['Sun'];
     p.translate(p.width * 0.5, p.height * 0.5);
     p.scale(sunScale);
-    p.drawMoon('Sun');
+    if (triMoon) {
+      p.drawTriMoon('Sun');
+    } else {
+      p.drawMoon('Sun');
+    }
     p.pop();
 
     p.push();
@@ -381,6 +405,179 @@ const SunAndMoon = (p) => {
       }
     }
   };
+
+  p.drawTriMoon = (phase) => {
+    let diameter = (p.width - 2 * padding) / 4; // Make each circle smaller
+    let radius = diameter / 2;
+    let verticalSpacing = radius * 1.5; // Space between circles
+
+    p.translate(0, radius / 2);
+    if (phase !== 'Empty') {
+
+      if (darkBg) {
+        let colors = moonPhases['White'];
+        p.push();
+        p.translate(0, -radius);
+        let backgroundGradient = p.drawingContext.createLinearGradient(0, p.height, p.width, 0);
+        backgroundGradient.addColorStop(0, p.color(colors[0] || '#FFFFFF'));
+        backgroundGradient.addColorStop(0.3, p.color(colors[1] || colors[0] || '#FFFFFF'));
+        backgroundGradient.addColorStop(0.6, p.color(colors[2] || colors[1] || '#FFFFFF'));
+        backgroundGradient.addColorStop(1.0, p.color(colors[3] || colors[0] || '#FFFFFF'));
+
+        p.drawingContext.fillStyle = backgroundGradient;
+        p.noStroke();
+        p.rect(-p.width / 2, -p.height / 2, p.width, p.height);
+        p.pop();
+      } else {
+        p.push();
+        p.translate(0, -radius);
+        let backgroundGradient = p.drawingContext.createLinearGradient(0, p.height, p.width, 0);
+        backgroundGradient.addColorStop(0, p.color(selectedMoonColors[0] || '#FFFFFF'));
+        backgroundGradient.addColorStop(0.3, p.color(selectedMoonColors[1] || selectedMoonColors[0] || '#FFFFFF'));
+        backgroundGradient.addColorStop(0.6, p.color(selectedMoonColors[2] || selectedMoonColors[1] || '#FFFFFF'));
+        backgroundGradient.addColorStop(1.0, p.color(selectedMoonColors[3] || selectedMoonColors[0] || '#FFFFFF'));
+
+        p.drawingContext.fillStyle = backgroundGradient;
+        p.noStroke();
+        p.rect(-p.width / 2, -p.height / 2, p.width, p.height);
+        p.pop();
+      }
+      // Draw three circles vertically
+      for (let i = 0; i < 3; i++) {
+        let currentColors;
+        let yOffset;
+        
+        if (i === 0) {
+          currentColors = moonColors1;
+          yOffset = -p.height / 6;
+        } else if (i === 1) {
+          currentColors = moonColors2;
+          yOffset = 0;
+        } else {
+          currentColors = moonColors3;
+          yOffset = p.height / 6;
+        }
+
+
+        
+        p.push();
+        p.translate(0, yOffset);
+
+        // Background gradient for each circle
+        p.translate(0, -radius/2);
+        p.push();
+        let backgroundGradient = p.drawingContext.createLinearGradient(0, diameter, diameter, 0);
+        backgroundGradient.addColorStop(0, p.color(currentColors[0] || '#FFFFFF'));
+        backgroundGradient.addColorStop(0.3, p.color(currentColors[1] || currentColors[0] || '#FFFFFF'));
+        backgroundGradient.addColorStop(0.6, p.color(currentColors[2] || currentColors[1] || '#FFFFFF'));
+        backgroundGradient.addColorStop(1.0, p.color(currentColors[3] || currentColors[0] || '#FFFFFF'));
+
+        p.drawingContext.fillStyle = backgroundGradient;
+        p.noStroke();
+        p.ellipse(0, 0, radius * 2, radius * 2);
+        p.pop();
+
+        // Draw circle with shadow effects
+        p.fill(bgColor);
+        p.noStroke();
+        p.drawingContext.shadowBlur = radius / 3;
+        p.drawingContext.shadowColor = p.color(currentColors[0]);
+        p.drawingContext.shadowOffsetX = 0;
+        p.drawingContext.shadowOffsetY = 0;
+
+        p.drawingContext.fillStyle = backgroundGradient;
+        p.ellipse(0, 0, radius * 2, radius * 2);
+        
+        p.fill(bgColor);
+        p.drawingContext.shadowBlur = radius / 3;
+        p.drawingContext.shadowColor = p.color(currentColors[1]);
+        p.drawingContext.shadowOffsetX = -radius / 10;
+        p.drawingContext.shadowOffsetY = -radius / 10;
+
+        p.drawingContext.fillStyle = backgroundGradient;
+        p.ellipse(0, 0, radius * 2, radius * 2);
+
+        p.fill(bgColor);
+        p.drawingContext.shadowBlur = radius / 3;
+        p.drawingContext.shadowColor = p.color(currentColors[2]);
+        p.drawingContext.shadowOffsetX = radius / 10;
+        p.drawingContext.shadowOffsetY = -radius / 10;
+
+        p.drawingContext.fillStyle = backgroundGradient;
+        p.ellipse(0, 0, radius * 2, radius * 2);
+        
+        p.fill(bgColor);
+        p.drawingContext.shadowBlur = radius / 3;
+        p.drawingContext.shadowColor = p.color(currentColors[3]);
+        p.drawingContext.shadowOffsetX = radius / 10;
+        p.drawingContext.shadowOffsetY = radius / 10;
+
+        p.drawingContext.fillStyle = backgroundGradient;
+        p.ellipse(0, 0, radius * 2, radius * 2);
+
+        p.pop();
+      };
+    } else {
+      // Dark mode - three smaller circles
+      darkGraphic.push();
+      darkGraphic.translate(0, radius / 2);
+      darkGraphic.noFill();
+      
+      if (allDark) {
+        darkGraphic.background(darkBg);
+      } else {
+        darkGraphic.background(bgColor);
+      }
+
+      // Draw three circles
+      for (let i = 0; i < 3; i++) {
+        let yOffset;
+        if (i === 0) {
+          yOffset = -p.height / 6;
+        } else if (i === 1) {
+          yOffset = 0;
+        } else {
+          yOffset = p.height / 6;
+        }
+
+        darkGraphic.push();
+        darkGraphic.translate(0, yOffset);
+        darkGraphic.translate(0, -radius/2);
+        
+        darkGraphic.stroke(textColor);
+        darkGraphic.strokeWeight(1);
+        darkGraphic.ellipse(0, 0, radius * 2, radius * 2);
+
+        if (!allDark) {
+          // Add blueprint grid effect for each circle
+          darkGraphic.stroke(textColor + "08");
+          let blueprintColumns = 20; // Reduced for smaller circles
+          let squareSize = radius * 2 / blueprintColumns;
+          let blueprintRows = Math.round(radius * 2 / squareSize);
+
+          darkGraphic.push();
+          darkGraphic.translate(-radius, -radius);
+          for (let i = 0; i <= blueprintRows; i++) {
+            darkGraphic.line(0, i * squareSize, radius * 2, i * squareSize);
+          }
+          for (let i = 0; i <= blueprintColumns; i++) {
+            darkGraphic.line(i * squareSize, 0, i * squareSize, radius * 2);
+          }
+          darkGraphic.pop();
+        }
+        
+        darkGraphic.pop();
+      }
+      
+      darkGraphic.pop();
+    }
+  };
+
+  p.keyPressed = () => {
+    if (p.key === 's') {
+      p.save('orb.png');
+    }
+  }
 }
 
 export default SunAndMoon; 
