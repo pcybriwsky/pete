@@ -34,6 +34,10 @@ const sketchMap = {
   lenticular: {
     component: 'Lenticular',
     displayName: 'Lenticular'
+  },
+  blobRotation: {
+    component: 'BlobRotation',
+    displayName: 'Blob Rotation'
   }
 };
 

@@ -9,6 +9,7 @@ import Flowfield from './Flowfield';
 import Sun from './SimpleSun';
 import SunAndMoon from './SunAndMoon';
 import Lenticular from './Lenticular';
+import BlobRotation from './BlobRotation';
 
 const sketchMap = {
   circles,
@@ -18,7 +19,8 @@ const sketchMap = {
   Flowfield,
   Sun,
   SunAndMoon,
-  Lenticular
+  Lenticular,
+  BlobRotation
 };
 
 const P5Wrapper = ({ sketch }) => {

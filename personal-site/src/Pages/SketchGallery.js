@@ -49,7 +49,13 @@ const sketches = [
     title: 'Lenticular',
     description: 'A lenticular',
     instructions: 'Click and drag your mouse to create a lenticular'
-  }
+  },
+  {
+      id: 'blobRotation',
+      title: 'Blobrotation',
+      description: 'A new creative sketch description.',
+      instructions: 'Instructions for the new sketch.'
+    }
 ];
 
 const SketchGallery = () => {
