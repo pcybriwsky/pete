@@ -38,7 +38,19 @@ const sketchMap = {
   blobRotation: {
     component: 'BlobRotation',
     displayName: 'Blob Rotation'
-  }
+  },
+  bullseye: {
+    component: 'Bullseye',
+    displayName: 'Bullseye'
+  },
+  'block': {
+      component: 'Block',
+      displayName: 'Block'
+    },
+    'snake': {
+        component: 'Snake',
+        displayName: 'Snake'
+      }
 };
 
 const SketchPage = () => {

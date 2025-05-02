@@ -9,6 +9,9 @@ import Flowfield from './Flowfield';
 import Sun from './SimpleSun';
 import SunAndMoon from './SunAndMoon';
 import Lenticular from './Lenticular';
+import Snake from './Snake';
+import Block from './Block';
+import Bullseye from './Bullseye';
 import BlobRotation from './BlobRotation';
 
 const sketchMap = {
@@ -20,7 +23,10 @@ const sketchMap = {
   Sun,
   SunAndMoon,
   Lenticular,
-  BlobRotation
+  BlobRotation,
+  Bullseye,
+  Block,
+  Snake
 };
 
 const P5Wrapper = ({ sketch }) => {

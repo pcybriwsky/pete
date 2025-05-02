@@ -55,7 +55,25 @@ const sketches = [
       title: 'Blobrotation',
       description: 'A new creative sketch description.',
       instructions: 'Instructions for the new sketch.'
-    }
+    },
+    {
+        id: 'bullseye',
+        title: 'Bullseye',
+        description: 'A new creative sketch description.',
+        instructions: 'Instructions for the new sketch.'
+      },
+      {
+          id: 'block',
+          title: 'Block',
+          description: 'A new creative sketch description.',
+          instructions: 'Instructions for the new sketch.'
+        },
+        {
+            id: 'snake',
+            title: 'Snake',
+            description: 'A new creative sketch description.',
+            instructions: 'Instructions for the new sketch.'
+          }
 ];
 
 const SketchGallery = () => {
