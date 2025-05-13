@@ -50,7 +50,11 @@ const sketchMap = {
     'snake': {
         component: 'Snake',
         displayName: 'Snake'
-      }
+      },
+      'gradient': {
+          component: 'Gradient',
+          displayName: 'Gradient'
+        }
 };
 
 const SketchPage = () => {

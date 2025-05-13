@@ -73,7 +73,13 @@ const sketches = [
             title: 'Snake',
             description: 'A new creative sketch description.',
             instructions: 'Instructions for the new sketch.'
-          }
+          },
+          {
+              id: 'gradient',
+              title: 'Gradient',
+              description: 'A new creative sketch description.',
+              instructions: 'Instructions for the new sketch.'
+            }
 ];
 
 const SketchGallery = () => {
