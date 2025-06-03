@@ -294,7 +294,7 @@ const Blocks = (p) => {
 
     // Use top palette colors for top face and stroke
     if(outlineMode) {
-      let strokeWeight = p.map(blockSize, 100, blockMaxSize*scale, 1, 5, true);
+      let strokeWeight = p.map(blockSize, 100 *scale, blockMaxSize*scale, 1, 5, true);
       p.strokeWeight(strokeWeight);
       p.strokeJoin(p.ROUND);
       p.strokeCap(p.SQUARE);
@@ -583,7 +583,7 @@ const Blocks = (p) => {
     p.fill(255, 255, 255, 0.9);
     p.stroke(0);
     p.strokeWeight(1);
-    p.rect(mobileMenuX, mobileMenuY, 200, 300, 10);
+    p.rect(mobileMenuX, mobileMenuY, 200, 400, 10);
     
     // Menu title
     p.fill(0);
