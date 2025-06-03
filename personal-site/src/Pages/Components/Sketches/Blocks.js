@@ -510,7 +510,7 @@ const Blocks = (p) => {
       
       // Check if touch is in menu items
       if (showMobileMenu) {
-        scale = 0.3;
+        scale = 0.5;
         const menuItems = [
           { text: 'Toggle Outline', key: 'O', action: () => outlineMode = !outlineMode },
           { text: 'Toggle White Fill', key: 'W', action: () => whiteFill = !whiteFill },
