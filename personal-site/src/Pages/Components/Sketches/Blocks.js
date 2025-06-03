@@ -58,6 +58,17 @@ const Blocks = (p) => {
   let printWidth = 1275;  // 4.25" at 300 DPI
   let printHeight = 1650; // 5.5" at 300 DPI
 
+  // Mobile UI variables
+  let showMobileMenu = false;
+  let mobileMenuX = 20;
+  let mobileMenuY = 20;
+  let isDragging = false;
+  let lastTouchX = 0;
+  let lastTouchY = 0;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let isTouchMode = false;
+
   // Helper function to select palette by index
   const selectPaletteByIndex = (index) => {
     const paletteNames = Object.keys(palettes);
@@ -138,9 +149,11 @@ const Blocks = (p) => {
     p.frameRate(fr);
     p.textFont('Arial');
 
+    // Check if we're on mobile
+    isTouchMode = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
     noiseTexture = p.createGraphics(p.width, p.height);
     generateNoiseTexture();    
-    // Initialize palette
     selectRandomPalette();
     
     console.log("Blocks setup complete. Click to connect magic. Press 'r' to change palette, 'm' to toggle mode.");
@@ -202,6 +215,13 @@ const Blocks = (p) => {
     }
     if (showPaletteName) {
       drawBanner();
+    }
+
+    if (isTouchMode) {
+      drawTouchArea();
+    }
+    if (showMobileMenu) {
+      drawMobileMenu();
     }
   };
 
@@ -473,6 +493,126 @@ const Blocks = (p) => {
     p.pixelDensity(window.devicePixelRatio);
     
     console.log(`Print exported as: ${filename}.png`);
+  };
+
+  // Add touch event handlers
+  p.touchStarted = (e) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      
+      // Check if touch is in menu area
+      if (touch.clientX < 100 && touch.clientY < 100) {
+        showMobileMenu = !showMobileMenu;
+        return false;
+      }
+      
+      // Check if touch is in menu items
+      if (showMobileMenu) {
+        const menuItems = [
+          { text: 'Toggle Outline', key: 'O', action: () => outlineMode = !outlineMode },
+          { text: 'Toggle White Fill', key: 'W', action: () => whiteFill = !whiteFill },
+          { text: 'Toggle Noise', key: 'N', action: () => noise = !noise },
+          { text: 'Toggle Border', key: 'K', action: () => border = !border },
+          { text: 'Toggle Uniform', key: 'U', action: () => uniform = !uniform },
+          // { text: 'Export Print', key: 'P', action: () => exportPrint() },
+          { text: 'Random Palette', key: 'R', action: () => selectRandomPalette() }
+        ];
+        
+        let y = mobileMenuY + 40;
+        for (let item of menuItems) {
+          if (touch.clientY >= y && touch.clientY <= y + 30 &&
+              touch.clientX >= mobileMenuX && touch.clientX <= mobileMenuX + 200) {
+            item.action();
+            return false;
+          }
+          y += 30;
+        }
+      }
+      
+      isDragging = true;
+      lastTouchX = touch.clientX;
+      lastTouchY = touch.clientY;
+      return false;
+    }
+    return false;
+  };
+
+  p.touchMoved = (e) => {
+    if (isDragging && e.touches.length === 1) {
+      const touch = e.touches[0];
+      const dx = touch.clientX - lastTouchX;
+      const dy = touch.clientY - lastTouchY;
+      
+      // Update mouse position for the sketch
+      p.mouseX = touch.clientX;
+      p.mouseY = touch.clientY;
+      
+      lastTouchX = touch.clientX;
+      lastTouchY = touch.clientY;
+      return false;
+    }
+    return false;
+  };
+
+  p.touchEnded = () => {
+    isDragging = false;
+    return false;
+  };
+
+  // Add mobile menu drawing
+  const drawMobileMenu = () => {
+    if (!isTouchMode || !showMobileMenu) return;
+    
+    p.push();
+    p.fill(255, 255, 255, 0.9);
+    p.stroke(0);
+    p.strokeWeight(1);
+    p.rect(mobileMenuX, mobileMenuY, 200, 300, 10);
+    
+    // Menu title
+    p.fill(0);
+    p.noStroke();
+    p.textSize(16);
+    p.textAlign(p.LEFT, p.TOP);
+    p.text('Controls', mobileMenuX + 10, mobileMenuY + 10);
+    
+    // Menu items
+    const menuItems = [
+      { text: 'Toggle Outline', key: 'O', action: () => outlineMode = !outlineMode },
+      { text: 'Toggle White Fill', key: 'W', action: () => whiteFill = !whiteFill },
+      { text: 'Toggle Noise', key: 'N', action: () => noise = !noise },
+      { text: 'Toggle Border', key: 'K', action: () => border = !border },
+      { text: 'Toggle Uniform', key: 'U', action: () => uniform = !uniform },
+      // { text: 'Export Print', key: 'P', action: () => exportPrint() },
+      { text: 'Random Palette', key: 'R', action: () => selectRandomPalette() }
+    ];
+    
+    let y = mobileMenuY + 40;
+    menuItems.forEach(item => {
+      p.fill(0);
+      p.textSize(14);
+      p.text(`${item.text} (${item.key})`, mobileMenuX + 10, y);
+      y += 30;
+    });
+    
+    p.pop();
+  };
+
+  // Add touch area indicator
+  const drawTouchArea = () => {
+    if (!isTouchMode) return;
+    
+    p.push();
+    p.noFill();
+    p.stroke(255, 255, 255, 0.3);
+    p.strokeWeight(2);
+    p.rect(0, 0, 100, 100);
+    p.fill(255, 255, 255, 0.3);
+    p.noStroke();
+    p.ellipse(50, 50, 20, 20);
+    p.pop();
   };
 
   // Optional: Add other p5.js event functions as needed
