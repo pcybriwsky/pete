@@ -524,6 +524,13 @@ const Blocks = (p) => {
           { text: 'Randomize Area', key: 'A', action: () => {
             scale = p.random(0.3, 1);
             blockMaxSize = p.random(100, 600) * scale;
+          } },
+          { text: 'Toggle Mode', key: 'M', action: () => {
+            if (mode === 'random') {
+              mode = 'mouse';
+            } else {
+              mode = 'random';
+            }
           } }
         ];
         
@@ -593,7 +600,20 @@ const Blocks = (p) => {
       { text: 'Toggle Border', key: 'K', action: () => border = !border },
       { text: 'Toggle Uniform', key: 'U', action: () => uniform = !uniform },
       // { text: 'Export Print', key: 'P', action: () => exportPrint() },
-      { text: 'Random Palette', key: 'R', action: () => selectRandomPalette() }
+      { text: 'Random Palette', key: 'R', action: () => selectRandomPalette() },
+      { text: 'Randomize Size', key: 'B', action: () => blockMaxSize = p.random(100, 600) * scale },
+      { text: 'Randomize Height', key: 'H', action: () => heightMultiplier = p.random(0.2, 1) },
+      { text: 'Randomize Area', key: 'A', action: () => {
+        scale = p.random(0.3, 1);
+        blockMaxSize = p.random(100, 600) * scale;
+      } },
+      { text: 'Toggle Mode', key: 'M', action: () => {
+        if (mode === 'random') {
+          mode = 'mouse';
+        } else {
+          mode = 'random';
+        }
+      } }
     ];
     
     let y = mobileMenuY + 40;
