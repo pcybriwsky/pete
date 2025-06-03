@@ -79,7 +79,31 @@ const sketches = [
               title: 'Gradient',
               description: 'A new creative sketch description.',
               instructions: 'Instructions for the new sketch.'
-            }
+            },
+            {
+                id: 'lightball',
+                title: 'Lightball',
+                description: 'A new creative sketch description.',
+                instructions: 'Instructions for the new sketch.'
+              },
+              {
+                  id: 'dice',
+                  title: 'Dice',
+                  description: 'A new creative sketch description.',
+                  instructions: 'Instructions for the new sketch.'
+                },
+                {
+                    id: 'fullScreenGradient',
+                    title: 'Fullscreengradient',
+                    description: 'A new creative sketch description.',
+                    instructions: 'Instructions for the new sketch.'
+                  },
+                  {
+                      id: 'blocks',
+                      title: 'Blocks',
+                      description: 'A new creative sketch description.',
+                      instructions: 'Instructions for the new sketch.'
+                    }
 ];
 
 const SketchGallery = () => {

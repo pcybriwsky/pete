@@ -54,7 +54,23 @@ const sketchMap = {
       'gradient': {
           component: 'Gradient',
           displayName: 'Gradient'
-        }
+        },
+        'lightball': {
+            component: 'Lightball',
+            displayName: 'Lightball'
+          },
+          'dice': {
+              component: 'Dice',
+              displayName: 'Dice'
+            },
+            'fullScreenGradient': {
+                component: 'FullScreenGradient',
+                displayName: 'Fullscreengradient'
+              },
+              'blocks': {
+                  component: 'Blocks',
+                  displayName: 'Blocks'
+                }
 };
 
 const SketchPage = () => {

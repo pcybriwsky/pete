@@ -9,6 +9,10 @@ import Flowfield from './Flowfield';
 import Sun from './SimpleSun';
 import SunAndMoon from './SunAndMoon';
 import Lenticular from './Lenticular';
+import Blocks from './Blocks';
+import FullScreenGradient from './FullScreenGradient';
+import Dice from './Dice';
+import Lightball from './Lightball';
 import Gradient from './Gradient';
 import Snake from './Snake';
 import Block from './Block';
@@ -28,7 +32,11 @@ const sketchMap = {
   Bullseye,
   Block,
   Snake,
-  Gradient
+  Gradient,
+  Lightball,
+  Dice,
+  FullScreenGradient,
+  Blocks
 };
 
 const P5Wrapper = ({ sketch }) => {

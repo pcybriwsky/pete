@@ -7,18 +7,18 @@ const Gradient = (p) => {
   
   // --- Path Variables ---
   let path = [];
-  const MAX_PATH_POINTS = 200; // Adjust for longer/shorter trail
+  const MAX_PATH_POINTS = 300; // Adjust for longer/shorter trail
   let currentX, currentY;
   let targetX, targetY;
   const LERP_FACTOR = 0.1; // Adjust for faster/slower following
+  const SIZE_SCALE_FACTOR = 0.1; // Controls how quickly circles get smaller (0-1)
 
   // --- Visual Style Variables (from SimpleSun) ---
   const palettes = {
     sunset: {"Melon":"ffa69e","Eggshell":"faf3dd","Celeste":"b8f2e6","Light blue":"aed9e0","Payne\'s gray":"5e6472"},
     forest: {"Forest Green":"2c5530","Sage":"7d9b76","Cream":"f7e1d7","Moss":"4a5759","Deep Green":"053225"},
     ocean: {"Deep Blue":"003b4f","Turquoise":"38a2ac","Aqua":"7cd7d7","Sky":"b4e7e7","Sand":"fff1d9"},
-    // desert: {"Terracotta":"cd5ф34","Sand":"e6c79c","Dusty Rose":"d4a5a5","Sage":"9cae9c","Brown":"6e4c4b"}, // Issue with Terracotta hex
-    desert_fixed: {"Terracotta":"cd5f34","Sand":"e6c79c","Dusty Rose":"d4a5a5","Sage":"9cae9c","Brown":"6e4c4b"},
+    desert: {"Terracotta":"cd5f34","Sand":"e6c79c","Dusty Rose":"d4a5a5","Sage":"9cae9c","Brown":"6e4c4b"},
     berry: {"Purple":"4a1942","Magenta":"893168","Pink":"c4547d","Light Pink":"e8a1b3","Cream":"ead7d7"}
   };
   let currentPalette;
@@ -114,8 +114,11 @@ const Gradient = (p) => {
     } else {
       // --- Live Mode: Use IMU if connected, else fallback to mouse ---
       if (isMagic && magic.modules.imu?.orientation) {
-        let rotW = magic.modules.imu.orientation.w; 
-        let rotY = magic.modules.imu.orientation.y; 
+        let invertX = -1;
+        let invertY =  1;
+        let rotW = magic.modules.imu.orientation.w * invertX; 
+        let rotY = magic.modules.imu.orientation.y * invertY; 
+
         targetX = p.map(-rotW, -0.3, 0.3, 0, p.width, true); 
         targetY = p.map(-rotY, -0.3, 0.3, 0, p.height, true); 
       } else {
@@ -139,6 +142,10 @@ const Gradient = (p) => {
     if (path.length > 0 && colors.length > 1) { 
         for (let i = 0; i < path.length; i++) {
             let pt = path[i];
+            // Calculate size scaling based on position in path
+            let sizeScale = p.map(i, 0, path.length - 1, SIZE_SCALE_FACTOR, 1);
+            let currentCircleSize = circleSize * sizeScale;
+            
             let colorPosition = p.map(i, 0, path.length -1, 0, colors.length -1); 
             let colorIndex = Math.floor(colorPosition);
             let nextColorIndex = (colorIndex + 1) % colors.length; 
@@ -148,14 +155,16 @@ const Gradient = (p) => {
             let lerpedColor = p.lerpColor(color1, color2, interpolationFactor);
             let nextNextColorIndex = (nextColorIndex + 1) % colors.length;
             let color3 = p.color(colors[nextNextColorIndex]);
-            let interpolatedColor2 = p.lerpColor(color2, color3, interpolationFactor); // Get the 'next' interpolated color
+            let interpolatedColor2 = p.lerpColor(color2, color3, interpolationFactor);
             let gradient = p.drawingContext.createLinearGradient(
-                pt.x, pt.y - circleSize / 2, pt.x, pt.y + circleSize / 2
+                pt.x, pt.y - currentCircleSize / 2, pt.x, pt.y + currentCircleSize / 2
             );
             gradient.addColorStop(0, lerpedColor); 
             gradient.addColorStop(1, interpolatedColor2); 
             p.drawingContext.fillStyle = gradient;
-            p.ellipse(pt.x, pt.y, circleSize, circleSize);
+            p.stroke(255, 255, 255, 0.5);
+            p.strokeWeight(2);
+            p.ellipse(pt.x, pt.y, currentCircleSize, currentCircleSize);
         }
     }
 
@@ -210,7 +219,7 @@ const Gradient = (p) => {
      generateNoiseTexture();
      
      // Adjust circle size based on new width?
-     circleSize = p.width * 0.03; 
+     circleSize = p.width * 0.3; 
 
      // Redraw background immediately
      p.push();
