@@ -1,532 +1,273 @@
-import { InkLine } from "../Functions/InkLine";
-import { Poly } from "../Functions/Watercolor";
-import { dataURLtoFile, shareFile } from "../Functions/filesharing";
-let ellipseSizeStart = 40;
-let sizeInc = ellipseSizeStart / 5;
-let thickness = 5;
+import * as magic from "@indistinguishable-from-magic/magic-js"
 
-let gap;
-let y_start;
+// IMPORTANT: Rename this function to match the filename PascalCase
+const Hearts = (p) => {
+  let isDevMode = true; 
+  let isMagic = false;
+  
+  // --- Sketch-specific variables and setup ---
+  let hearts = [];
+  let maxHearts = 15;
+  let heartSize = 50;
+  let floatSpeed = 8;
+  let rotationSpeed = 0.02;
+  let lifeSpan = 50; // in frames
+  let frameSpacing = 10;
 
-let palettes = [
-  ["#fffff2", "#41d3bd", "#EE6352", "#223843"],
-  // ["#0EF3C5", "#015268", "#025385", "#172347"],
-  ["#CD8A8C", "#C56AB4", "#838C80", "#EFEAE7"],
-  ["#ff715b", "#258EA6", "#44AF69", "#e9f1f7"],
-  // ["#CCFF66", "#FF6666", "#FFFBFC", "#58355E"],
-  ["#79addc", "#ff8552", "#79addc", "#F7F3E3"],
-];
+  
+  // Print mode variables
+  let isPrintMode = false;
+  let printWidth = 1275;  // 4.25" at 300 DPI
+  let printHeight = 1650; // 5.5" at 300 DPI
+  let originalWidth, originalHeight;
 
-let paletteNum,
-  color1,
-  color2,
-  color3,
-  colorBG,
-  density,
-  ringSize,
-  showFill,
-  shift,
-  shiftInc,
-  buffer,
-  leeway,
-  inframe,
-  height,
-  width;
+  // Palette variables
+  let currentPaletteName = '';
+  let showPaletteName = false;
+  let paletteIndex = 0;
+  let colors = [];
+  let currentPalette;
+  
+  // Extended palette structure
+  const palettes = {
+    sunset: {"Melon":"ffa69e","Eggshell":"faf3dd","Celeste":"b8f2e6","Light blue":"aed9e0","Payne's gray":"5e6472"},
+    forest: {"Forest Green":"2c5530","Sage":"7d9b76","Cream":"f7e1d7","Moss":"4a5759","Deep Green":"053225"},
+    ocean: {"Deep Blue":"003b4f","Turquoise":"38a2ac","Aqua":"7cd7d7","Sky":"b4e7e7","Sand":"fff1d9"},
+    desert: {"Terracotta":"cd5f34","Sand":"e6c79c","Dusty Rose":"d4a5a5","Sage":"9cae9c","Brown":"6e4c4b"},
+    berry: {"Purple":"4a1942","Magenta":"893168","Pink":"c4547d","Light Pink":"e8a1b3","Cream":"ead7d7"},
+    nordic: {"Frost":"e5e9f0","Polar":"eceff4","Arctic":"d8dee9","Glacier":"4c566a","Night":"2e3440"},
+    autumn: {"Rust":"d35400","Amber":"f39c12","Gold":"f1c40f","Crimson":"c0392b","Burgundy":"7b241c"},
+    spring: {"Blossom":"ffb6c1","Mint":"98ff98","Lavender":"e6e6fa","Peach":"ffdab9","Sage":"9cae9c"},
+    sunset2: {"Coral":"ff7f50","Peach":"ffdab9","Lavender":"e6e6fa","Sky":"87ceeb","Night":"191970"},
+    neon: {"Pink":"ff69b4","Cyan":"00ffff","Yellow":"ffff00","Purple":"9370db","Green":"32cd32"},
+    pastel: {"Mint":"98ff98","Lavender":"e6e6fa","Peach":"ffdab9","Sky":"87ceeb","Rose":"ffb6c1"},
+    jewel: {"Ruby":"e0115f","Sapphire":"0f52ba","Emerald":"50c878","Amethyst":"9966cc","Topaz":"ffc87c"},
+    retro: {"Teal":"008080","Coral":"ff7f50","Mustard":"ffdb58","Mint":"98ff98","Lavender":"e6e6fa"},
+    vintage: {"Sepia":"704214","Cream":"fffdd0","Sage":"9cae9c","Dusty Rose":"d4a5a5","Brown":"6e4c4b"},
+    modern: {"Slate":"708090","Silver":"c0c0c0","Gray":"808080","Charcoal":"36454f","Black":"000000"},
+    cyberpunk: {"Hot Pink":"ff007f","Electric Blue":"00eaff","Neon Yellow":"fff700","Deep Purple":"2d0036","Black":"0a0a0a"},
+    noir: {"Jet":"343434","Charcoal":"232323","Ash":"bdbdbd","Ivory":"f6f6f6","Blood Red":"c3073f"},
+    midnight: {"Midnight Blue":"191970","Deep Navy":"0a0a40","Steel":"7b8fa1","Moonlight":"e5e5e5","Violet":"8f00ff"},
+    vaporwave: {"Vapor Pink":"ff71ce","Vapor Blue":"01cdfe","Vapor Purple":"b967ff","Vapor Yellow":"fffaa8","Vapor Black":"323232"},
+    synthwave: {"Synth Pink":"ff3caa","Synth Blue":"29ffe3","Synth Orange":"ffb300","Synth Purple":"7c3cff","Synth Black":"1a1a2e"}
+  };
 
-let multiply = 1;
-let weatherData = null;
+  // Helper function to select palette by index
+  const selectPaletteByIndex = (index) => {
+    const paletteNames = Object.keys(palettes);
+    // Ensure index stays within bounds
+    if (index < 0) index = paletteNames.length - 1;
+    if (index >= paletteNames.length) index = 0;
+    
+    const paletteName = paletteNames[index];
+    currentPalette = palettes[paletteName];
+    currentPaletteName = paletteName;
+    colors = Object.values(currentPalette).map(c => c.startsWith('#') ? c : `#${c}`);
+    paletteIndex = index;
+  };
 
-const openWeatherAPIKey = '5d07d30b0246f6207ec7888efecc0602';
+  // Helper function to select and shuffle palette
+  const selectRandomPalette = () => {
+    const paletteNames = Object.keys(palettes);
+    const randomIndex = Math.floor(p.random(paletteNames.length));
+    selectPaletteByIndex(randomIndex);
+  };
 
-const getWeatherData = async (lat, lng) => {
-  const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${openWeatherAPIKey}&units=imperial`);
-  const data = await response.json();
-  return data;
-}
+  const drawBanner = () => {
+    p.push();
+    p.fill(255, 255, 255, 0.9);
+    p.noStroke();
+    p.rect(0, 0, p.width, 40);
+    p.fill(0);
+    p.textSize(16);
+    p.textAlign(p.LEFT, p.CENTER);
+    p.text(`Palette: ${currentPaletteName}`, 20, 20);
+    p.pop();
+  };
 
+  const exportPrint = () => {
+    // Store original canvas size
+    originalWidth = p.width;
+    originalHeight = p.height;
+    
+    // Generate filename with palette and date
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `sketch-${currentPaletteName}-${date}`;
+    
+    // Resize canvas for print
+    p.resizeCanvas(printWidth, printHeight);
+    p.pixelDensity(1);
+    
+    // Redraw the sketch
+    p.draw();
+    
+    // Save the file
+    p.saveCanvas(filename, 'png');
+    
+    // Restore original canvas size
+    p.resizeCanvas(originalWidth, originalHeight);
+    p.pixelDensity(window.devicePixelRatio);
+    
+    console.log(`Print exported as: ${filename}.png`);
+  };
 
-const myP5Sketch = (p) => {
-  p.preload = async () => {
-    weatherData = await getWeatherData(40.7128, -74.0060);
-  }
+  // Heart drawing function
+  const drawHeart = (x, y, size, rotation, life) => {
+    p.push();
+    p.translate(x, y);
+    p.rotate(rotation);
+    // p.scale(size);
+    p.noFill();
+    p.strokeWeight(2);
+    p.beginShape();
 
-  p.setup = async () => {
-
-    p.pixelDensity(2);
-    if (window.innerWidth < 768) {
-      p.createCanvas(640 / 2, 960 / 2);
-      multiply = 0.5;
-      ellipseSizeStart = 20;
-      sizeInc = ellipseSizeStart / 4;
-
+    let specificSize = 0
+    if(life < lifeSpan/2) {
+      specificSize = p.map(life, 0, lifeSpan/2, 0, size, true);
+    } else {
+      specificSize = p.map(life, lifeSpan/2, lifeSpan, size, 0, true);
     }
-    else {
-      p.createCanvas(640 * 0.8, 960 * 0.8);
-      multiply = 0.8;
-      ellipseSizeStart = 40 * 0.8;
-      sizeInc = ellipseSizeStart / 4;
+    for (let t = 0; t < p.TWO_PI; t += 0.05) {
+      let heartX = specificSize * 16 * Math.pow(Math.sin(t), 3) / 16;
+      let heartY = specificSize * -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16;
+      p.vertex(heartX, heartY);
     }
+    p.endShape(p.CLOSE);
+    p.pop();
+  };
 
-    p.setColors();
-    p.angleMode(p.DEGREES);
-    p.strokeCap(p.SQUARE);
-    p.frameRate(5);
-    height = p.height;
-    width = p.width;
-    buffer = width / 8;
-    y_start = (10 * height) / 10 - buffer;
-    inframe = buffer / 2;
-    gap = p.random(12, 40);
-  }
+  // Create a new heart
+  const createHeart = (x, y) => {
+    if (hearts.length >= maxHearts) {
+      hearts.shift(); // Remove oldest heart if at max
+    }
+    
+    const colorIndex = Math.floor(p.random(colors.length));
+    const size = p.random(heartSize * 0.5, heartSize);
+    const rotation = p.random(-p.PI/4, p.PI/4);
+    const speed = p.random(floatSpeed * 0.9, floatSpeed * 1.1);
+    const rotSpeed = p.random(-rotationSpeed, rotationSpeed);
+    
+    hearts.push({
+      x,
+      y,
+      size,
+      rotation,
+      speed,
+      rotSpeed,
+      color: colors[colorIndex],
+      life: 0
+    });
+  };
+
+  p.setup = () => {
+    p.pixelDensity(1);
+    p.createCanvas(p.windowWidth, p.windowHeight);
+    p.colorMode(p.RGB, 255, 255, 255, 1);
+    p.clear();
+    p.strokeWeight(2);
+    p.frameRate(15);
+    p.textFont('Arial');
+    
+    // Initialize with a random palette
+    selectRandomPalette();
+    
+    console.log("Hearts setup complete. Click to connect magic.");
+    console.log("Controls:");
+    console.log("  R: Random palette");
+    console.log("  Up/Down: Cycle palettes");
+    console.log("  P: Export print");
+    console.log("  P: Toggle palette name display");
+  };
 
   p.draw = () => {
-    let daytime = 0;
-    p.strokeCap(p.SQUARE);
-    if (weatherData == null) {
-      return
-    }
-    if (Date.now() > weatherData.sys.sunrise * 1000 && Date.now() < weatherData.sys.sunset * 1000) {
-      daytime = 1;
-    }
-    else {
-      daytime = 0;
-    }
+    p.clear();
+    
+    // Create new heart at mouse position
+    // if (p.mouseIsPressed) {
+    // }
 
-    if (!daytime) {
-      let flipColor = colorBG;
-      colorBG = color1;
-      color1 = flipColor;
-    }
-    p.background(colorBG);
-    p.stroke(color1);
-    p.strokeWeight(3);
-    p.noFill();
-    p.drawSky();
-    if (daytime) {
-      p.drawSun();
-    } else {
-      p.drawMoon();
-    }
-
-    p.drawTrees();
-    p.setColors();
-    p.noLoop();
-  }
-
-  p.setColors = () => {
-    paletteNum = Math.floor(p.random(palettes.length));
-    color1 = palettes[paletteNum][0];
-    color2 = palettes[paletteNum][1];
-    color3 = palettes[paletteNum][2];
-    colorBG = palettes[paletteNum][3];
-    gap = Math.round(p.random(30, 50));
-  }
-
-  p.drawTrees = () => {
-    p.angleMode(p.DEGREES);
-    let noiseCoefficient = 0;
-    let rotateBranches = 0;
-    let treeHeight = 0;
-    if (p.random(1) > 0.5) {
-      rotateBranches = 1;
-    }
-    p.beginShape();
-    for (let i = buffer + inframe; i < width - buffer - inframe; i += gap / 100) {
-      let towerHeight = p.random(10, 100);
-      let towerSections = Math.round(p.random(1, 5));
-
-      // Trees
-      p.noStroke();
-      p.fill(color1);
-      p.stroke(color1);
-      treeHeight = p.random(80, 300) * multiply;
-      // vertex(i, y_start + noiseCoefficient * noise(i));
-      if (Math.round(i % gap) == 0) {
-        p.line(i, y_start + noiseCoefficient * p.noise(i), i, y_start - treeHeight);
-        for (let b = 0; b < treeHeight; b += 0.5) {
-          let size = (p.random(5, 15) + b / 5) * multiply;
-          let gapCoefficient = p.map(gap, 5, 100, 0.2, 5);
-          size = size * gapCoefficient;
-          let angle = p.map(
-            size,
-            (5 + b / 5) * gapCoefficient,
-            (15 + b / 5) * gapCoefficient,
-            70,
-            30
-          );
-          if (rotateBranches) {
-            if (
-              -treeHeight + b * 1 < -size &&
-              -treeHeight + b * 1 > -treeHeight - 5
-            ) {
-              p.push();
-              p.noFill();
-              p.strokeWeight(1);
-
-              p.translate(
-                i,
-                y_start - treeHeight + (b + 1) * 1 + noiseCoefficient * p.noise(i)
-              );
-              p.rotate(180);
-              p.arc(
-                0,
-                0,
-                size / p.random(1, 2),
-                size / p.random(1, 2),
-                -90,
-                angle - 90 - p.random(-10, 10)
-              );
-              p.arc(
-                0,
-                -0,
-                size / p.random(1, 2),
-                size / p.random(1, 2),
-                -angle - 90 + p.random(-10, 10),
-                -90
-              );
-              // arc(0, 0, 25, 25, 0, 30);
-              //         line(0, 0, 0, 5);
-
-              //         rotate(-60);
-              //         line(0, 0, 0, 5);
-              p.pop();
-            }
-          } else {
-            if (
-              -treeHeight + b * 1 < -10 &&
-              -treeHeight + b * 1 > -treeHeight + 4
-            ) {
-              p.push();
-              p.noFill();
-              p.strokeWeight(1);
-              p.translate(
-                i,
-                y_start - treeHeight + (b + 1) * 1 + noiseCoefficient * p.noise(i)
-              );
-
-              p.arc(
-                0,
-                0,
-                size / p.random(1, 2),
-                size / p.random(1, 2),
-                -90,
-                angle - 90 - p.random(-10, 10)
-              );
-              p.arc(
-                0,
-                -0,
-                size / p.random(1, 2),
-                size / p.random(1, 2),
-                -angle - 90 + p.random(-10, 10),
-                -90
-              );
-              // arc(0, 0, 25, 25, 0, 30);
-              //         line(0, 0, 0, 5);
-
-              //         rotate(-60);
-              //         line(0, 0, 0, 5);
-              p.pop();
-            }
-          }
-        }
-      }
-    }
-    p.noFill();
-    p.stroke(color1);
-    p.endShape();
-  }
-
-  let lineVector = [];
-  let edge = true;
-  p.drawSky = () => {
-    let u = buffer;
-    let s = p.random(1.5, 3);
-    let t = s / 2;
-    let skyCoefficient = 0.5
-    if(weatherData.clouds.all != undefined && weatherData.clouds.all > 0) {
-      skyCoefficient = p.map(weatherData.clouds.all, 0, 100, 0.2, 0.1, true);
-    }
-    let wind = p.random(10, 30); // Connect to some variable
-    if(weatherData.wind.speed != undefined && weatherData.wind.speed > 0) {
-      wind = p.map(weatherData.wind.speed, 0, 40, 10, 60, true);
-    }
-    else{
-      wind = 25;
-    }
-    let v = null;
-    let n = null;
-
-    for (let x = u; x <= width - u; x += s) {
-      for (let y = u; y <= y_start; y += s) {
-        v = 0.01;
-        n = p.noise(x * v, y * v);
-        let nNextX = p.noise((x + 1) * v, y * v);
-        let nNextY = p.noise(x * v, (y + 1) * v);
-        let nNextXY = p.noise((x + s) * v, (y + s) * v);
-        if (n > skyCoefficient) {
-          // strokeWeight(n * random(0.1, 2));
-          // stroke(255)
-          p.push();
-          p.translate(x, y);
-          p.angleMode(p.RADIANS);
-          p.rotate(n * 6);
-          p.stroke(color1);
-          // p(0, 0);
-          // p(t / 3, 0);
-          p.strokeWeight(n * p.random(1, 2));
-          p.stroke(color2);
-          p.point((t * wind) / 3, 0);
-          p.stroke(color1);
-          p.strokeWeight(n * p.random(1, 2));
-          p.point(t * wind, 0);
-          p.pop();
-          edge = true;
-        } else if (edge == true) {
-          lineVector.push({ x: x, y: y, noise: n, edge: true });
-          edge = false;
-        } else if (nNextX > skyCoefficient) {
-          lineVector.push({ x: x + s, y: y, noise: nNextX, edge: true });
-          // edge = false;
-        } else if (nNextY > skyCoefficient) {
-          lineVector.push({ x: x, y: y + s, noise: nNextY, edge: true });
-          // edge = false;
-        } else if (nNextXY > skyCoefficient) {
-          lineVector.push({ x: x + s, y: y + s, noise: nNextXY, edge: true });
-          // edge = false;
-        } else {
-          edge = false;
-          lineVector.push({ x: x, y: y, noise: n, edge: false });
-        }
-      }
-    }
-  }
-
-
-  p.drawSun = () => {
-    p.angleMode(p.DEGREES);
-    let noon = weatherData.sys.sunrise * 1000 + (weatherData.sys.sunset * 1000 - weatherData.sys.sunrise * 1000) / 2;
-    let sunCenterX = null;
-    let sunCenterY = null;
-    if (Date.now() > noon) {
-      sunCenterX = p.map(Date.now(), noon, weatherData.sys.sunset * 1000, width/2, width - buffer);
-      sunCenterY = p.map(sunCenterX, width/2, width - buffer, height / 10, height / 4);
-    }
-    else {
-      sunCenterX = p.map(Date.now(), weatherData.sys.sunrise * 1000, noon, buffer, width/2);
-      sunCenterY = p.map(sunCenterX, buffer, width/2, height / 10, height / 4);
-    }
-    ellipseSizeStart = p.map(sunCenterY, 0, p.height / 4, 10, 80);
-    p.noStroke();
-    p.fill(colorBG);
-    p.ellipse(
-      sunCenterX,
-      sunCenterY,
-      ellipseSizeStart + sizeInc * 16,
-      ellipseSizeStart + sizeInc * 16
-    );
-
-    p.fill(color1);
-    p.ellipse(
-      sunCenterX,
-      sunCenterY,
-      ellipseSizeStart + 2 * sizeInc,
-      ellipseSizeStart + 2 * sizeInc
-    );
-    p.stroke(color1);
-    p.noFill();
-    for (let i = 0; i < 4; i++) {
-      if (i >= 2) {
-        p.stroke(colorBG);
-        p.strokeWeight(thickness * 2);
-      } else {
-        p.strokeWeight(thickness);
-        p.noFill();
-      }
-
-      p.beginShape();
-      for (let d = 0; d < 360; d += 2) {
-        let x_start = sunCenterX + (ellipseSizeStart + sizeInc * i) * p.cos(d);
-        let y_start = sunCenterY + (ellipseSizeStart + sizeInc * i) * p.sin(d);
-
-        p.vertex(x_start, y_start);
-        if (p.random(1) < 0.25) {
-          p.strokeWeight(thickness);
-          p.endShape();
-          p.beginShape();
-        } else if (p.random(1) > 0.85) {
-          p.strokeWeight(thickness);
-          p.endShape();
-        }
-        let lineMulti = p.random(1.0, 3);
-        p.strokeWeight(thickness / 4);
-        if (i == 1) {
-          if (p.random(1) > 0.45) {
-            let xShift = p.random(1, 5);
-            let yShift = p.random(1, 5);
-            p.line(
-              x_start + (5 + xShift) * p.cos(d),
-              y_start + (5 + yShift) * p.sin(d),
-              x_start + (10 + xShift) * lineMulti * p.cos(d),
-              y_start + (10 + yShift) * lineMulti * p.sin(d)
-            );
-          }
-        }
-      }
-
-      p.strokeWeight(thickness);
-      p.endShape();
-    }
-  }
-
-  p.drawMoon = () => {
-    p.angleMode(p.DEGREES);
-    let moonCenterX = null;
-    let moonCenterY = null;
-    if (Date.now() > weatherData.sys.sunrise * 1000) {
+    // Update and draw hearts
+    for (let i = hearts.length - 1; i >= 0; i--) {
+      const heart = hearts[i];
       
-      moonCenterX = p.map(Date.now(), weatherData.sys.sunset * 1000, weatherData.sys.sunrise * 1000 + 86400*1000, buffer, width - buffer); // between tonight and tomorrow
-      moonCenterY = p.map(moonCenterX, buffer, width/2, height / 10, height / 4);
-    }
-    else {
-      moonCenterX = p.map(Date.now(), weatherData.sys.sunset * 1000 - (86400 * 1000), weatherData.sys.sunrise * 1000 , buffer, width - buffer);
-      moonCenterY = p.map(moonCenterX, width/2, width - buffer, height / 10, height / 4);
-    }
-    
-    
-    ellipseSizeStart = p.map(moonCenterY, 0, p.height / 4, 10, 80);
-    let moonOffset = ellipseSizeStart / p.random(2, 5);
-    p.noStroke();
-    p.fill(colorBG);
-    p.ellipse(
-      moonCenterX,
-      moonCenterY,
-      ellipseSizeStart + 16 * sizeInc,
-      ellipseSizeStart + 16 * sizeInc
-    );
-    p.fill(color1);
-    p.ellipse(
-      moonCenterX,
-      moonCenterY,
-      ellipseSizeStart + 3 * sizeInc,
-      ellipseSizeStart + 3 * sizeInc
-    );
-
-    p.noStroke();
-
-    p.stroke(colorBG);
-    p.noFill();
-    for (let i = 0; i < 4; i++) {
-      if (i >= 2) {
-        p.stroke(color1);
-        p.strokeWeight(thickness / 4);
-      } else {
-        p.strokeWeight(thickness / 4);
-        p.noFill();
+      // Update position and rotation
+      heart.y -= heart.speed;
+      heart.rotation += heart.rotSpeed;
+      
+      // Draw heart
+      p.noFill();
+      p.stroke(heart.color);
+      p.strokeWeight(1);
+      heart.life+=1;
+      drawHeart(heart.x, heart.y, heart.size, heart.rotation, heart.life);
+      
+      // Remove hearts that are off screen
+      if (heart.y < -heart.size * 2) {
+        hearts.splice(i, 1);
       }
 
-      if (i > 1) {
-        let drawLine = 1;
-        p.beginShape();
-        for (let d = 0; d < 360; d += 2) {
-          let x_start = moonCenterX + (ellipseSizeStart + sizeInc * i) * p.cos(d);
-          let y_start = moonCenterY + (ellipseSizeStart + sizeInc * i) * p.sin(d);
-
-          if (drawLine) {
-            p.stroke(color1);
-          } else {
-            p.noStroke();
-          }
-          p.vertex(x_start, y_start);
-
-          if (p.random(1) < 0.05) {
-            p.strokeWeight(thickness / 4);
-            p.endShape();
-            p.strokeWeight(thickness / 4);
-            if (p.random(1) < 0.2) {
-              p.fill(color1);
-            } else {
-              p.fill(colorBG);
-            }
-            p.ellipse(x_start, y_start, sizeInc / 2, sizeInc / 2);
-            p.noFill();
-            p.beginShape();
-            drawLine = 0;
-          } else if (p.random(1) > 0.5) {
-            p.strokeWeight(thickness / 4);
-            p.endShape();
-            drawLine = 0;
-          }
-
-          if (p.random(1) > 0.95) {
-            drawLine = 1;
-          }
-          let lineMulti = p.random(1.0, 3);
-          p.strokeWeight(thickness / 4);
-          if (i == 0) {
-            if (p.random(1) > 0.45) {
-              let xShift = p.random(1, 2);
-              let yShift = p.random(1, 2);
-              p.line(
-                x_start + (1 + xShift) * p.cos(d),
-                y_start + (1 + yShift) * p.sin(d),
-                x_start + (2 + xShift) * lineMulti * p.cos(d),
-                y_start + (2 + yShift) * lineMulti * p.sin(d)
-              );
-            }
-          }
-        }
-
-        p.strokeWeight(thickness / 4);
-        p.endShape();
+      if(heart.life > lifeSpan) {
+        hearts.splice(i, 1);
       }
     }
-    p.noStroke();
-    p.fill(colorBG);
-    p.ellipse(
-      moonCenterX + moonOffset,
-      moonCenterY - moonOffset / 2,
-      ellipseSizeStart + 2 * sizeInc,
-      ellipseSizeStart + 2 * sizeInc
-    );
-  }
+    if (p.frameCount % frameSpacing == 0) {
+      createHeart(p.mouseX, p.mouseY);
+    }
 
+     
+    // Show palette name if enabled
+    if (showPaletteName) {
+      drawBanner();
+    }
+  };
+
+  // Handles connecting to the magic device on click
   p.mousePressed = async () => {
-    if (p.mouseX < 0 || p.mouseX > p.width || p.mouseY < 0 || p.mouseY > p.height) {
-      return
-    }
-    if (navigator.share) {
-      var canvas = document.getElementsByClassName('p5Canvas')[0];
-      var img = canvas.toDataURL("image/png");
-      const file = await dataURLtoFile(img, 'my-output.png');
-      shareFile(file, 'my-output.png', null);
-    }
-    else {
-      p.saveCanvas('my-output', 'png');
+    if (isDevMode) {
+      isDevMode = false;
+      if (!isMagic) {
+        try {
+          await magic.connect({ mesh: false, auto: true });
+          console.log("Magic connected. Modules:", magic.modules);
+          isMagic = true;
+        } catch (error) {
+          console.error("Failed to connect magic:", error);
+          isDevMode = true;
+          return;
+        }
+      }
+      if (!isDevMode) {
+        p.loop();
+      }
+    } else {
+      console.log("Sketch interaction click.");
     }
   };
 
   p.windowResized = () => {
-    if (window.innerWidth < 768) {
-      p.resizeCanvas(640 / 2, 960 / 2);
-      ellipseSizeStart = 20;
-      sizeInc = ellipseSizeStart / 4;
-      multiply = 0.5;
-    }
-    else {
-      p.resizeCanvas(640 * 0.8, 960 * 0.8);
-      ellipseSizeStart = 40 * 0.8;
-      sizeInc = ellipseSizeStart / 4;
-      multiply = 0.8;
-    }
-    height = p.height;
-    width = p.width;
-    buffer = width / 8;
-    y_start = (10 * height) / 10 - buffer;
-    inframe = buffer / 2;
-    gap = p.random(12, 40);
-    p.loop();
+    p.resizeCanvas(p.windowWidth, p.windowHeight);
+  };
 
+  p.keyPressed = () => {
+    if (p.key === 'r' || p.key === 'R') {
+      selectRandomPalette();
+    }
+    if (p.keyCode === p.UP_ARROW) {
+      selectPaletteByIndex(paletteIndex + 1);
+    }
+    if (p.keyCode === p.DOWN_ARROW) {
+      selectPaletteByIndex(paletteIndex - 1);
+    }
+    if (p.key === 'p' || p.key === 'P') {
+      if (p.keyIsDown(p.SHIFT)) {
+        exportPrint();
+      } else {
+        showPaletteName = !showPaletteName;
+      }
+    }
   };
 };
 
-export default myP5Sketch;
+// IMPORTANT: Rename 'Hearts' to match the filename PascalCase
+export default Hearts; 

@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import p5 from 'p5';
 import circles from './Circles';
-import Hearts from './Hearts';
 import Landscape from './Landscape';
 import Wave from './Wave';
 import Sketchbook from './Sketchbook';
@@ -9,6 +8,7 @@ import Flowfield from './Flowfield';
 import Sun from './SimpleSun';
 import SunAndMoon from './SunAndMoon';
 import Lenticular from './Lenticular';
+import Hearts from './Hearts';
 import Blocks from './Blocks';
 import FullScreenGradient from './FullScreenGradient';
 import Dice from './Dice';
@@ -20,8 +20,8 @@ import Bullseye from './Bullseye';
 import BlobRotation from './BlobRotation';
 
 const sketchMap = {
+  Blocks,
   circles,
-  Hearts,
   Wave,
   Sketchbook,
   Flowfield,
@@ -36,7 +36,8 @@ const sketchMap = {
   Lightball,
   Dice,
   FullScreenGradient,
-  Blocks
+  Blocks,
+  Hearts
 };
 
 const P5Wrapper = ({ sketch }) => {

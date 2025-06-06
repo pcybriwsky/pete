@@ -12,7 +12,7 @@ const Blocks = (p) => {
   let currentPaletteName = '';
   let showPaletteName = false;
   let paletteIndex = 0;
-  let mode = 'random'; // 'random', 'mouse', or 'device'
+  let mode = 'mouse'; // 'random', 'mouse', or 'device'
   let maxHeight = 1000; // Maximum height for blocks
   let mouseInfluenceRadius = 1000; // How far the mouse influence extends
   let border = false;
@@ -60,6 +60,7 @@ const Blocks = (p) => {
 
   // Mobile UI variables
   let showMobileMenu = false;
+  let showDesktopMenu = false;
   let mobileMenuX = 20;
   let mobileMenuY = 20;
   let isDragging = false;
@@ -220,9 +221,7 @@ const Blocks = (p) => {
     if (isTouchMode) {
       drawTouchArea();
     }
-    if (showMobileMenu) {
-      drawMobileMenu();
-    }
+    drawControlMenu();
   };
 
   const calculateHeight = (x, y, frameMultiplier, inc) => {
@@ -467,6 +466,9 @@ const Blocks = (p) => {
     if (p.key === 'w' || p.key === 'W') {
       whiteFill = !whiteFill;
     }
+    if (p.key === 't' || p.key === 'T') {
+      showDesktopMenu = !showDesktopMenu;
+    }
   };
 
   const exportPrint = () => {
@@ -510,28 +512,26 @@ const Blocks = (p) => {
       
       // Check if touch is in menu items
       if (showMobileMenu) {
-        scale = 0.5;
         const menuItems = [
           { text: 'Toggle Outline', key: 'O', action: () => outlineMode = !outlineMode },
           { text: 'Toggle White Fill', key: 'W', action: () => whiteFill = !whiteFill },
           { text: 'Toggle Noise', key: 'N', action: () => noise = !noise },
           { text: 'Toggle Border', key: 'K', action: () => border = !border },
           { text: 'Toggle Uniform', key: 'U', action: () => uniform = !uniform },
-          // { text: 'Export Print', key: 'P', action: () => exportPrint() },
           { text: 'Random Palette', key: 'R', action: () => selectRandomPalette() },
           { text: 'Randomize Size', key: 'B', action: () => blockMaxSize = p.random(100, 600) * scale },
           { text: 'Randomize Height', key: 'H', action: () => heightMultiplier = p.random(0.2, 1) },
           { text: 'Randomize Area', key: 'A', action: () => {
             scale = p.random(0.3, 1);
             blockMaxSize = p.random(100, 600) * scale;
-          } },
+          }},
           { text: 'Toggle Mode', key: 'M', action: () => {
             if (mode === 'random') {
               mode = 'mouse';
             } else {
               mode = 'random';
             }
-          } }
+          }}
         ];
         
         let y = mobileMenuY + 40;
@@ -576,8 +576,8 @@ const Blocks = (p) => {
   };
 
   // Add mobile menu drawing
-  const drawMobileMenu = () => {
-    if (!isTouchMode || !showMobileMenu) return;
+  const drawControlMenu = () => {
+    if ((!isTouchMode && !showDesktopMenu) || (isTouchMode && !showMobileMenu)) return;
     
     p.push();
     p.fill(255, 255, 255, 0.9);
@@ -599,21 +599,21 @@ const Blocks = (p) => {
       { text: 'Toggle Noise', key: 'N', action: () => noise = !noise },
       { text: 'Toggle Border', key: 'K', action: () => border = !border },
       { text: 'Toggle Uniform', key: 'U', action: () => uniform = !uniform },
-      // { text: 'Export Print', key: 'P', action: () => exportPrint() },
       { text: 'Random Palette', key: 'R', action: () => selectRandomPalette() },
       { text: 'Randomize Size', key: 'B', action: () => blockMaxSize = p.random(100, 600) * scale },
       { text: 'Randomize Height', key: 'H', action: () => heightMultiplier = p.random(0.2, 1) },
       { text: 'Randomize Area', key: 'A', action: () => {
         scale = p.random(0.3, 1);
         blockMaxSize = p.random(100, 600) * scale;
-      } },
+      }},
       { text: 'Toggle Mode', key: 'M', action: () => {
         if (mode === 'random') {
           mode = 'mouse';
         } else {
           mode = 'random';
         }
-      } }
+      }},
+      { text: 'Export Print', key: 'P', action: () => exportPrint() }
     ];
     
     let y = mobileMenuY + 40;

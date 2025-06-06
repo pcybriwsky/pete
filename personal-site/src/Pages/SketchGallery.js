@@ -103,7 +103,13 @@ const sketches = [
                       title: 'Blocks',
                       description: 'A new creative sketch description.',
                       instructions: 'Instructions for the new sketch.'
-                    }
+                    },
+                    {
+                        id: 'hearts',
+                        title: 'Hearts',
+                        description: 'A new creative sketch description.',
+                        instructions: 'Instructions for the new sketch.'
+                      }
 ];
 
 const SketchGallery = () => {

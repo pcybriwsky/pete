@@ -70,7 +70,11 @@ const sketchMap = {
               'blocks': {
                   component: 'Blocks',
                   displayName: 'Blocks'
-                }
+                },
+                'hearts': {
+                    component: 'Hearts',
+                    displayName: 'Hearts'
+                  }
 };
 
 const SketchPage = () => {
