@@ -151,9 +151,9 @@ const Blocks = (p) => {
     p.textFont('Arial');
     // make max height smaller if canvas is smaller than 1000px
     if (p.width < 1000) {
-      maxHeight = 500;
+      maxHeight = 200;
       mouseInfluenceRadius = 500;
-      blockMaxSize = 200 * scale;
+      blockMaxSize = p.random(100, 300) * scale;
     }
 
     // Check if we're on mobile
