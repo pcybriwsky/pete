@@ -153,7 +153,7 @@ const Blocks = (p) => {
     if (p.width < 1000) {
       maxHeight = 200;
       mouseInfluenceRadius = 500;
-      blockMaxSize = p.random(100, 300) * scale;
+      blockMaxSize = p.random(50, 100) * scale;
     }
 
     // Check if we're on mobile
@@ -235,7 +235,7 @@ const Blocks = (p) => {
       return p.noise(x * 0.0001, y * frameMultiplier * 10, p.frameCount * frameMultiplier * 10) * maxHeight * heightMultiplier;
     } else {
       // --- Device or Mouse Mode: Use IMU if connected, else fallback to mouse ---
-      let ease = 0.000030 * scale
+      let ease = 0.000090 * scale
       if (mode === 'device') {
         if (isMagic && magic.modules.imu?.orientation) {
           let invertX = 1;
