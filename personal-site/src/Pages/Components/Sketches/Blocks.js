@@ -153,6 +153,7 @@ const Blocks = (p) => {
     if (p.width < 1000) {
       maxHeight = 500;
       mouseInfluenceRadius = 500;
+      blockMaxSize = 200 * scale;
     }
 
     // Check if we're on mobile
