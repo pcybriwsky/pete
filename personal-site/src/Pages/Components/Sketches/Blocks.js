@@ -149,6 +149,11 @@ const Blocks = (p) => {
     p.strokeWeight(2);
     p.frameRate(fr);
     p.textFont('Arial');
+    // make max height smaller if canvas is smaller than 1000px
+    if (p.width < 1000) {
+      maxHeight = 500;
+      mouseInfluenceRadius = 500;
+    }
 
     // Check if we're on mobile
     isTouchMode = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
