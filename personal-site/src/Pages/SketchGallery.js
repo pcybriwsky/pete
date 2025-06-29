@@ -109,7 +109,25 @@ const sketches = [
                         title: 'Hearts',
                         description: 'A new creative sketch description.',
                         instructions: 'Instructions for the new sketch.'
-                      }
+                      },
+                      {
+                          id: 'thermalTest',
+                          title: 'Thermal Test',
+                          description: 'A new creative sketch description.',
+                          instructions: 'Instructions for the new sketch.'
+                        },
+                        {
+                            id: 'colorBlend',
+                            title: 'Colorblend',
+                            description: 'A new creative sketch description.',
+                            instructions: 'Instructions for the new sketch.'
+                          },
+                          {
+                            id: 'growthrings',
+                            title: 'Growth Rings',
+                            description: 'A visualization of Substack data as generative growth rings.',
+                            instructions: 'Use "R" to change palettes. Use "P" to toggle the palette name. Use "S" to save.'
+                          }
 ];
 
 const SketchGallery = () => {

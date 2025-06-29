@@ -8,6 +8,9 @@ import Flowfield from './Flowfield';
 import Sun from './SimpleSun';
 import SunAndMoon from './SunAndMoon';
 import Lenticular from './Lenticular';
+import Trees from './Trees';
+import ColorBlend from './ColorBlend';
+import ThermalTest from './ThermalTest';
 import Hearts from './Hearts';
 import Blocks from './Blocks';
 import FullScreenGradient from './FullScreenGradient';
@@ -37,7 +40,10 @@ const sketchMap = {
   Dice,
   FullScreenGradient,
   Blocks,
-  Hearts
+  Hearts,
+  ThermalTest,
+  ColorBlend,
+  Trees
 };
 
 const P5Wrapper = ({ sketch }) => {

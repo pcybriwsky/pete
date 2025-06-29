@@ -12,7 +12,7 @@ const Blocks = (p) => {
   let currentPaletteName = '';
   let showPaletteName = false;
   let paletteIndex = 0;
-  let mode = 'mouse'; // 'random', 'mouse', or 'device'
+  let mode = 'mouse'; // 'random', 'mouse', 'device', or 'thermal'
   let maxHeight = 1000; // Maximum height for blocks
   let mouseInfluenceRadius = 1000; // How far the mouse influence extends
   let border = false;
@@ -150,11 +150,11 @@ const Blocks = (p) => {
     p.frameRate(fr);
     p.textFont('Arial');
     // make max height smaller if canvas is smaller than 1000px
-    
+    if (p.width < 1000) {
       maxHeight = 200;
       mouseInfluenceRadius = 500;
       blockMaxSize = p.random(50, 100) * scale;
-    
+    }
 
     // Check if we're on mobile
     isTouchMode = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -213,6 +213,14 @@ const Blocks = (p) => {
       let y = joystick.raw.y;
     }
 
+    if(isMagic && magic.modules.thermal) {
+      let thermal = magic.modules.thermal;
+      if (mode === 'thermal') {
+        // Only log temperature in thermal mode to reduce console spam
+        console.log('Thermal data:', thermal.raw.pixel_temperatures);
+      }
+    }
+
     if(border) {
       console.log("Drawing border");
       drawBorder();
@@ -233,9 +241,24 @@ const Blocks = (p) => {
   const calculateHeight = (x, y, frameMultiplier, inc) => {
     if (mode === 'random') {
       return p.noise(x * 0.0001, y * frameMultiplier * 10, p.frameCount * frameMultiplier * 10) * maxHeight * heightMultiplier;
+    } else if (mode === 'thermal' && isMagic && magic.modules.imu?.thermal?.raw?.pixel_temperatures) {
+      // Get thermal data
+      const thermalData = magic.modules.imu.thermal.raw.pixel_temperatures;
+      
+      // Calculate grid position based on x,y coordinates
+      const gridX = p.floor(p.map(x, -padding, p.width + padding, 0, 8, true));
+      const gridY = p.floor(p.map(y, -padding, p.height + padding, 0, 8, true));
+      
+      // Get temperature at this grid position
+      const tempIndex = gridY * 8 + gridX;
+      const temperature = thermalData[tempIndex] || 25; // Default to 25°C if out of bounds
+      
+      // Map temperature to height (assuming temperature range of 20-40°C)
+      const normalizedTemp = p.map(temperature, 20, 40, 0, 1, true);
+      return normalizedTemp * maxHeight * heightMultiplier;
     } else {
       // --- Device or Mouse Mode: Use IMU if connected, else fallback to mouse ---
-      let ease = 0.000090 * scale
+      let ease = 0.000030 * scale
       if (mode === 'device') {
         if (isMagic && magic.modules.imu?.orientation) {
           let invertX = 1;
@@ -297,35 +320,21 @@ const Blocks = (p) => {
     let leftTop = p.createVector(isoX - blockSize * 0.5, isoY - blockSize * 0.25 - h - (mode === 'random' ? blockSize * 0.5 : 0));
     let bottomTop = p.createVector(isoX, isoY - blockSize * 0.5 - h - (mode === 'random' ? blockSize * 0.5 : 0));
 
-    // Use top palette colors for top face and stroke
-    if(outlineMode) {
-      let strokeWeight = p.map(blockSize, 100 *scale, blockMaxSize*scale, 1, 5, true);
-      p.strokeWeight(strokeWeight);
-      p.strokeJoin(p.ROUND);
-      p.strokeCap(p.SQUARE);
-    }
-    p.stroke(p.color(colors[4])); // Use the darkest color for outline
-    p.fill(p.color(colors[0])); // Use first color for top face
-    if(randomPalettePerBlock) {
-      p.fill(p.color(topPalette[0]));
-      p.stroke(p.color(topPalette[4]));
-    }
-    if(outlineMode) {
-      p.stroke(p.color(colors[0]));
-      p.noFill();
-      if(whiteFill) {
-        p.fill(255);
-      }
-    }
+   
 
-    
-    p.quad(top.x, top.y,
-           rightTop.x, rightTop.y,
-           bottomTop.x, bottomTop.y,
-           leftTop.x, leftTop.y);
-
+    let gradientAlpha = "88"
     // Left face - use second color from current palette
     p.fill(p.color(currentColors[1]));
+    let leftBlockGradient = p.drawingContext.createLinearGradient(leftBottom.x, leftBottom.y, leftTop.x, leftTop.y);
+    // leftBlockGradient.addColorStop(0, p.color(currentColors[1] + gradientAlpha).toString());
+    leftBlockGradient.addColorStop(0, p.color("#e5e9f0").toString());
+    leftBlockGradient.addColorStop(1, p.color(currentColors[1]).toString());
+    let leftBlockGradientFlipped = p.drawingContext.createLinearGradient(leftTop.x, leftTop.y, leftBottom.x, leftBottom.y);
+    leftBlockGradientFlipped.addColorStop(0, p.color("#e5e9f0").toString());
+    leftBlockGradientFlipped.addColorStop(1, p.color(currentColors[1]).toString());
+    // p.drawingContext.fillStyle = leftBlockGradient;
+    p.drawingContext.strokeStyle = leftBlockGradientFlipped;
+    p.stroke(p.color("#e5e9f0"));
     if(outlineMode) {
       p.stroke(p.color(currentColors[1]));
       p.noFill();
@@ -338,6 +347,17 @@ const Blocks = (p) => {
 
     // Right face - use third color from current palette
     p.fill(p.color(currentColors[2]));
+    let rightBlockGradient = p.drawingContext.createLinearGradient(rightBottom.x, rightBottom.y, rightTop.x, rightTop.y);
+    // rightBlockGradient.addColorStop(0, p.color(currentColors[2] + gradientAlpha).toString());
+    rightBlockGradient.addColorStop(0, p.color("#e5e9f0").toString());
+    rightBlockGradient.addColorStop(1, p.color(currentColors[2]).toString());
+    p.drawingContext.fillStyle = rightBlockGradient;
+
+    let rightBlockGradientFlipped = p.drawingContext.createLinearGradient(rightTop.x, rightTop.y, rightBottom.x, rightBottom.y);
+    rightBlockGradientFlipped.addColorStop(0, p.color("#e5e9f0").toString());
+    rightBlockGradientFlipped.addColorStop(1, p.color(currentColors[2]).toString());
+    // p.drawingContext.strokeStyle = rightBlockGradientFlipped;
+    p.stroke(p.color("#e5e9f0"));
     if(outlineMode) {
       p.stroke(p.color(currentColors[2]));
       p.noFill();
@@ -345,10 +365,39 @@ const Blocks = (p) => {
         p.fill(255);
       }
     }
+    p.fill(p.color(currentColors[2]));
     p.quad(rightTop.x, rightTop.y,
            rightBottom.x, rightBottom.y,
            bottom.x, bottom.y,
            top.x, top.y);
+
+     // Use top palette colors for top face and stroke
+     if(outlineMode) {
+      let strokeWeight = p.map(blockSize, 100 *scale, blockMaxSize*scale, 1, 5, true);
+      p.strokeWeight(strokeWeight);
+      p.strokeJoin(p.ROUND);
+      p.strokeCap(p.SQUARE);
+    }
+    p.stroke(p.color(colors[4])); // Use the darkest color for outline
+    if(randomPalettePerBlock) {
+      p.fill(p.color(topPalette[0]));
+      p.stroke(p.color(topPalette[4]));
+    }
+    if(outlineMode) {
+      p.stroke(p.color(colors[0]));
+      p.noFill();
+      if(whiteFill) {
+        p.fill(255);
+      }
+    }
+    p.fill(p.color("#e5e9f0")); // Use first color for top face
+
+    
+    p.quad(top.x, top.y,
+           rightTop.x, rightTop.y,
+           bottomTop.x, bottomTop.y,
+           leftTop.x, leftTop.y);
+           
     p.pop();
   };
 
@@ -440,11 +489,13 @@ const Blocks = (p) => {
       // }
     }
     if (p.key === 'm' || p.key === 'M') {
-      // Cycle through modes: random -> mouse -> device -> random ...
+      // Cycle through modes: random -> mouse -> device -> thermal -> random ...
       if (mode === 'random') {
         mode = 'mouse';
       } else if (mode === 'mouse') {
         mode = 'device';
+      } else if (mode === 'device') {
+        mode = 'thermal';
       } else {
         mode = 'random';
       }

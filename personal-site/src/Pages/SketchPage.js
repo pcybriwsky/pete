@@ -74,7 +74,19 @@ const sketchMap = {
                 'hearts': {
                     component: 'Hearts',
                     displayName: 'Hearts'
-                  }
+                  },
+                  'thermalTest': {
+                      component: 'ThermalTest',
+                      displayName: 'Thermal Test'
+                    },
+                    'colorBlend': {
+                        component: 'ColorBlend',
+                        displayName: 'Colorblend'
+                      },
+                      'growthrings': {
+                          component: 'Trees',
+                          displayName: 'Growth Rings'
+                        }
 };
 
 const SketchPage = () => {
