@@ -29,7 +29,7 @@ const Trees = (p) => {
   
   // Extended palette structure
   const palettes = {
-    ink: { background: "#f4f1ea", foreground: "#1a1a1a" }
+    ink: { background: "#f4f1ea", foreground: "#1a1a1a", red: "#a0522d", blue: "#228b22" }
   };
 
   p.preload = () => {
@@ -74,7 +74,7 @@ const Trees = (p) => {
         for (let x = 0; x < noiseTexture.width; x++) {
             let index = (x + y * noiseTexture.width) * 4;
             const noiseValue = p.random(180, 255);
-            const alphaValue = p.random(25, 55);
+            const alphaValue = p.random(60, 80);
 
             noiseTexture.pixels[index] = noiseValue;
             noiseTexture.pixels[index + 1] = noiseValue;
@@ -147,7 +147,7 @@ const Trees = (p) => {
 
         if (isLastRing) {
           baseRadius += 15;
-          thickness *= 15;
+          thickness *= 10;
           noiseFactor *= 1.8;
         }
 
@@ -191,6 +191,7 @@ const Trees = (p) => {
     for (const row of table.getRows()) {
       const week = row.getNum('week');
       const word_count = row.getNum('word_count');
+      const sentiment = row.getNum('sentiment');
       
       let isLastRing = week === table.getRowCount();
       let baseRadius = p.map(week, 0, table.getRowCount(), 5, maxRadius);
@@ -206,11 +207,13 @@ const Trees = (p) => {
       // Draw a single, noisy ring multiple times for a textured look
       for(let i = 0; i < 1; i++) {
         p.beginShape();
-        const noiseScale = maxRadius/52;
+        const noiseScale = p.map(sentiment, minSentiment, maxSentiment, maxRadius/32, 1);
         const randomness = 0;
 
         fgColor.setAlpha(150);
-        p.stroke(fgColor);
+        let sentimentScale = p.map(sentiment, minSentiment, maxSentiment, 0, 1);
+        let strokeColor = p.lerpColor(p.color(palettes.ink.red), p.color(palettes.ink.blue), sentimentScale);
+        p.stroke(strokeColor);
         p.strokeWeight(thickness);
 
         for (let angle = 0; angle < p.TWO_PI; angle += p.PI / 360) {
@@ -246,7 +249,32 @@ const Trees = (p) => {
     p.textSize(16);
     p.text("Week (1-52) → Ring Position", textStartX, textStartY + lineSpacing);
     p.text("Word Count → Ring Thickness", textStartX, textStartY + lineSpacing * 2);
-    p.text("Sentiment → Ring Smoothness", textStartX, textStartY + lineSpacing * 3);
+    p.text("Sentiment → Ring Color", textStartX, textStartY + lineSpacing * 3);
+
+    // Draw sentiment gradient bar
+    const gradY = textStartY + lineSpacing * 4 + 10;
+    const gradX = textStartX;
+    const gradW = 220;
+    const gradH = 16;
+    for (let i = 0; i < gradW; i++) {
+      let t = i / (gradW - 1);
+      let c = p.lerpColor(p.color(palettes.ink.red), p.color(palettes.ink.blue), t);
+      p.stroke(c);
+      p.line(gradX + i, gradY, gradX + i, gradY + gradH);
+    }
+    // Midpoint marker
+    p.stroke(p.color('#222'));
+    p.strokeWeight(2);
+    p.line(gradX + gradW / 2, gradY - 2, gradX + gradW / 2, gradY + gradH + 2);
+    p.noStroke();
+    p.fill(p.color(palettes.ink.red));
+    p.textSize(12);
+    p.textAlign(p.LEFT, p.TOP);
+    p.text("Negative", gradX, gradY + gradH + 4);
+    p.fill(p.color(palettes.ink.blue));
+    p.textAlign(p.RIGHT, p.TOP);
+    p.text("Positive", gradX + gradW, gradY + gradH + 4);
+
     p.image(noiseTexture, 0, 0, p.width, p.height);
     p.pop();
     
