@@ -242,55 +242,71 @@ const Gradient = (p) => {
       motionBtn.style('color', hasDeviceOrientation ? 'white' : 'black');
       motionBtn.mousePressed(async () => {
         if (!hasDeviceOrientation) {
-          try {
-            await requestDeviceOrientation();
-            if (hasDeviceOrientation) {
-              motionBtn.html('📱 Motion Active');
-              motionBtn.style('background-color', '#28a745');
-              motionBtn.style('color', 'white');
-              // Switch to device orientation mode
-              controlMode = 'device_orientation';
+          if (
+            typeof DeviceMotionEvent !== 'undefined' &&
+            typeof DeviceMotionEvent.requestPermission === 'function' &&
+            typeof DeviceOrientationEvent !== 'undefined' &&
+            typeof DeviceOrientationEvent.requestPermission === 'function'
+          ) {
+            try {
+              const motion = await DeviceMotionEvent.requestPermission();
+              const orient = await DeviceOrientationEvent.requestPermission();
+              if (motion === 'granted' || orient === 'granted') {
+                window.addEventListener('deviceorientation', handleDeviceOrientation);
+                hasDeviceOrientation = true;
+                motionBtn.html('📱 Motion Active');
+                motionBtn.style('background-color', '#28a745');
+                motionBtn.style('color', 'white');
+                controlMode = 'device_orientation';
+              } else {
+                showMotionErrorModal('Motion/orientation permission denied. Please enable it in your device settings.');
+              }
+            } catch (error) {
+              showMotionErrorModal('Motion/orientation permission denied. Please enable it in your device settings.');
             }
-          } catch (error) {
-            console.error('Failed to enable motion control:', error);
-            motionBtn.html('❌ Motion Failed');
-            motionBtn.style('background-color', '#dc3545');
+          } else {
+            // Fallback for non-iOS or older devices
+            window.addEventListener('deviceorientation', handleDeviceOrientation);
+            hasDeviceOrientation = true;
+            motionBtn.html('📱 Motion Active');
+            motionBtn.style('background-color', '#28a745');
             motionBtn.style('color', 'white');
-            // Show modal for permission errors
-            showMotionErrorModal('Motion permission denied. Please enable it in your device settings.');
-            // Reset button after 2 seconds
-            setTimeout(() => {
-              motionBtn.html('📱 Enable Motion');
-              motionBtn.style('background-color', '#f0f0f0');
-              motionBtn.style('color', 'black');
-            }, 2000);
+            controlMode = 'device_orientation';
           }
         }
       });
       motionBtn.touchStarted(async () => {
         if (!hasDeviceOrientation) {
-          try {
-            await requestDeviceOrientation();
-            if (hasDeviceOrientation) {
-              motionBtn.html('📱 Motion Active');
-              motionBtn.style('background-color', '#28a745');
-              motionBtn.style('color', 'white');
-              // Switch to device orientation mode
-              controlMode = 'device_orientation';
+          if (
+            typeof DeviceMotionEvent !== 'undefined' &&
+            typeof DeviceMotionEvent.requestPermission === 'function' &&
+            typeof DeviceOrientationEvent !== 'undefined' &&
+            typeof DeviceOrientationEvent.requestPermission === 'function'
+          ) {
+            try {
+              const motion = await DeviceMotionEvent.requestPermission();
+              const orient = await DeviceOrientationEvent.requestPermission();
+              if (motion === 'granted' || orient === 'granted') {
+                window.addEventListener('deviceorientation', handleDeviceOrientation);
+                hasDeviceOrientation = true;
+                motionBtn.html('📱 Motion Active');
+                motionBtn.style('background-color', '#28a745');
+                motionBtn.style('color', 'white');
+                controlMode = 'device_orientation';
+              } else {
+                showMotionErrorModal('Motion/orientation permission denied. Please enable it in your device settings.');
+              }
+            } catch (error) {
+              showMotionErrorModal('Motion/orientation permission denied. Please enable it in your device settings.');
             }
-          } catch (error) {
-            console.error('Failed to enable motion control:', error);
-            motionBtn.html('❌ Motion Failed');
-            motionBtn.style('background-color', '#dc3545');
+          } else {
+            // Fallback for non-iOS or older devices
+            window.addEventListener('deviceorientation', handleDeviceOrientation);
+            hasDeviceOrientation = true;
+            motionBtn.html('📱 Motion Active');
+            motionBtn.style('background-color', '#28a745');
             motionBtn.style('color', 'white');
-            // Show modal for permission errors
-            showMotionErrorModal('Motion permission denied. Please enable it in your device settings.');
-            // Reset button after 2 seconds
-            setTimeout(() => {
-              motionBtn.html('📱 Enable Motion');
-              motionBtn.style('background-color', '#f0f0f0');
-              motionBtn.style('color', 'black');
-            }, 2000);
+            controlMode = 'device_orientation';
           }
         }
         return false;
