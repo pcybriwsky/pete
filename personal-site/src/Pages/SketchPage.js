@@ -173,7 +173,7 @@ const SketchPage = () => {
         onClick={handleMotionTest}
         onTouchStart={handleMotionTest}
       >
-        Test Motion Permission
+        Test Motion Permission New
       </button>
     </div>
   );
