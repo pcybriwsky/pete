@@ -100,54 +100,40 @@ const SketchPage = () => {
   
   const sketch = sketchMap[sketchName];
 
-  useEffect(() => {
-    console.log('Attaching motion test handler');
-    const handler = async () => {
-      console.log('Test motion button tapped');
-      if (
-        typeof DeviceMotionEvent !== 'undefined' &&
-        typeof DeviceMotionEvent.requestPermission === 'function'
-      ) {
-        try {
-          const motion = await DeviceMotionEvent.requestPermission();
-          const orient = await DeviceOrientationEvent.requestPermission();
-          alert(
-            'DeviceMotionEvent: ' +
-              motion +
-              '\nDeviceOrientationEvent: ' +
-              orient
+  // Handler for the test button, attached directly in JSX
+  const handleMotionTest = async () => {
+    if (
+      typeof DeviceMotionEvent !== 'undefined' &&
+      typeof DeviceMotionEvent.requestPermission === 'function'
+    ) {
+      try {
+        const motion = await DeviceMotionEvent.requestPermission();
+        const orient = await DeviceOrientationEvent.requestPermission();
+        alert(
+          'DeviceMotionEvent: ' +
+            motion +
+            '\nDeviceOrientationEvent: ' +
+            orient
+        );
+        if (motion === 'granted' || orient === 'granted') {
+          window.addEventListener(
+            'deviceorientation',
+            (e) => {
+              alert(
+                'Orientation event received!\n' +
+                  JSON.stringify(e, null, 2)
+              );
+            },
+            { once: true }
           );
-          if (motion === 'granted' || orient === 'granted') {
-            window.addEventListener(
-              'deviceorientation',
-              (e) => {
-                alert(
-                  'Orientation event received!\n' +
-                    JSON.stringify(e, null, 2)
-                );
-              },
-              { once: true }
-            );
-          }
-        } catch (err) {
-          alert('Error requesting permission: ' + err);
         }
-      } else {
-        alert('requestPermission not supported on this device/browser.');
+      } catch (err) {
+        alert('Error requesting permission: ' + err);
       }
-    };
-    const btn = document.getElementById('test-motion-btn');
-    if (btn) {
-      btn.addEventListener('click', handler);
-      btn.addEventListener('touchstart', handler);
+    } else {
+      alert('requestPermission not supported on this device/browser.');
     }
-    return () => {
-      if (btn) {
-        btn.removeEventListener('click', handler);
-        btn.removeEventListener('touchstart', handler);
-      }
-    };
-  }, []);
+  };
 
   if (!sketch) {
     return (
@@ -184,6 +170,8 @@ const SketchPage = () => {
           border: "1px solid #ccc",
           boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
         }}
+        onClick={handleMotionTest}
+        onTouchStart={handleMotionTest}
       >
         Test Motion Permission
       </button>
