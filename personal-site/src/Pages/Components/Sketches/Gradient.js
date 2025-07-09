@@ -6,6 +6,8 @@ const Gradient = (p) => {
   let showControls = false;
   let controlMode = 'mouse'; // 'mouse', 'orientation', 'device_orientation', or 'joystick'
   let showStroke = true;
+  let hollowMode = false; // When true, shows only stroke with no fill
+  let currentShape = 'circle'; // 'circle', 'square', or 'diamond'
   let isMagic = false;
   let hasDeviceOrientation = false;
   let deviceOrientationData = { beta: 0, gamma: 0 };
@@ -50,8 +52,8 @@ const Gradient = (p) => {
 
   // --- GUI Elements ---
   let lerpSlider, scaleSlider, pathSlider, circleSizeSlider;
-  let paletteSelect, modeSelect, sizeDistributionSelect;
-  let strokeCheckbox;
+  let paletteSelect, modeSelect, sizeDistributionSelect, shapeSelect;
+  let strokeCheckbox, hollowCheckbox;
   let controlPanel;
   let rawValuesDisplay, targetValuesDisplay;
   
@@ -182,11 +184,29 @@ const Gradient = (p) => {
         sizeDistribution = sizeDistributionSelect.value();
       });
 
-      // Create checkbox
+      // Add shape selector
+      p.createP('Shape:').parent(controlPanel);
+      shapeSelect = p.createSelect();
+      shapeSelect.parent(controlPanel);
+      shapeSelect.option('Circle', 'circle');
+      shapeSelect.option('Square', 'square');
+      shapeSelect.option('Diamond', 'diamond');
+      shapeSelect.selected(currentShape);
+      shapeSelect.changed(() => {
+        currentShape = shapeSelect.value();
+      });
+
+      // Create checkboxes
       strokeCheckbox = p.createCheckbox('Show Stroke', showStroke);
       strokeCheckbox.parent(controlPanel);
       strokeCheckbox.changed(() => {
         showStroke = strokeCheckbox.checked();
+      });
+
+      hollowCheckbox = p.createCheckbox('Hollow Mode', hollowMode);
+      hollowCheckbox.parent(controlPanel);
+      hollowCheckbox.changed(() => {
+        hollowMode = hollowCheckbox.checked();
       });
     }
   };
@@ -277,6 +297,92 @@ const Gradient = (p) => {
         return false;
       });
 
+      // Hollow mode button
+      let hollowBtn = p.createButton(hollowMode ? '🔲 Solid Mode' : '🔲 Hollow Mode');
+      hollowBtn.parent(mobileMenu);
+      hollowBtn.style('width', '100%');
+      hollowBtn.style('margin', '5px 0');
+      hollowBtn.style('padding', '8px');
+      hollowBtn.style('border-radius', '5px');
+      hollowBtn.style('border', '1px solid #ccc');
+      hollowBtn.style('background-color', hollowMode ? '#007bff' : '#f0f0f0');
+      hollowBtn.style('color', hollowMode ? 'white' : 'black');
+      hollowBtn.mousePressed(() => {
+        hollowMode = !hollowMode;
+        hollowBtn.html(hollowMode ? '🔲 Solid Mode' : '🔲 Hollow Mode');
+        hollowBtn.style('background-color', hollowMode ? '#007bff' : '#f0f0f0');
+        hollowBtn.style('color', hollowMode ? 'white' : 'black');
+      });
+      hollowBtn.touchStarted(() => {
+        hollowMode = !hollowMode;
+        hollowBtn.html(hollowMode ? '🔲 Solid Mode' : '🔲 Hollow Mode');
+        hollowBtn.style('background-color', hollowMode ? '#007bff' : '#f0f0f0');
+        hollowBtn.style('color', hollowMode ? 'white' : 'black');
+        return false;
+      });
+
+      // Motion control permission button
+      let motionBtn = p.createButton(hasDeviceOrientation ? '📱 Motion Active' : '📱 Enable Motion');
+      motionBtn.parent(mobileMenu);
+      motionBtn.style('width', '100%');
+      motionBtn.style('margin', '5px 0');
+      motionBtn.style('padding', '8px');
+      motionBtn.style('border-radius', '5px');
+      motionBtn.style('border', '1px solid #ccc');
+      motionBtn.style('background-color', hasDeviceOrientation ? '#28a745' : '#f0f0f0');
+      motionBtn.style('color', hasDeviceOrientation ? 'white' : 'black');
+      motionBtn.mousePressed(async () => {
+        if (!hasDeviceOrientation) {
+          try {
+            await requestDeviceOrientation();
+            if (hasDeviceOrientation) {
+              motionBtn.html('📱 Motion Active');
+              motionBtn.style('background-color', '#28a745');
+              motionBtn.style('color', 'white');
+              // Switch to device orientation mode
+              controlMode = 'device_orientation';
+            }
+          } catch (error) {
+            console.error('Failed to enable motion control:', error);
+            motionBtn.html('❌ Motion Failed');
+            motionBtn.style('background-color', '#dc3545');
+            motionBtn.style('color', 'white');
+            // Reset button after 2 seconds
+            setTimeout(() => {
+              motionBtn.html('📱 Enable Motion');
+              motionBtn.style('background-color', '#f0f0f0');
+              motionBtn.style('color', 'black');
+            }, 2000);
+          }
+        }
+      });
+      motionBtn.touchStarted(async () => {
+        if (!hasDeviceOrientation) {
+          try {
+            await requestDeviceOrientation();
+            if (hasDeviceOrientation) {
+              motionBtn.html('📱 Motion Active');
+              motionBtn.style('background-color', '#28a745');
+              motionBtn.style('color', 'white');
+              // Switch to device orientation mode
+              controlMode = 'device_orientation';
+            }
+          } catch (error) {
+            console.error('Failed to enable motion control:', error);
+            motionBtn.html('❌ Motion Failed');
+            motionBtn.style('background-color', '#dc3545');
+            motionBtn.style('color', 'white');
+            // Reset button after 2 seconds
+            setTimeout(() => {
+              motionBtn.html('📱 Enable Motion');
+              motionBtn.style('background-color', '#f0f0f0');
+              motionBtn.style('color', 'black');
+            }, 2000);
+          }
+        }
+        return false;
+      });
+
       // Save button
       let saveBtn = p.createButton('💾 Save Image');
       saveBtn.parent(mobileMenu);
@@ -331,6 +437,11 @@ const Gradient = (p) => {
         sizeDistribution = 'start';
         updateSizeButtons();
       });
+      startBtn.touchStarted(() => {
+        sizeDistribution = 'start';
+        updateSizeButtons();
+        return false;
+      });
 
       let middleBtn = p.createButton('Middle');
       middleBtn.parent(mobileMenu);
@@ -345,9 +456,116 @@ const Gradient = (p) => {
         sizeDistribution = 'middle';
         updateSizeButtons();
       });
+      middleBtn.touchStarted(() => {
+        sizeDistribution = 'middle';
+        updateSizeButtons();
+        return false;
+      });
 
       // Store buttons for updating
       mobileMenu.sizeButtons = [endBtn, startBtn, middleBtn];
+
+      // Add shape selector
+      p.createP('Shape:').parent(mobileMenu).style('margin-top', '15px').style('margin-bottom', '5px');
+      
+      let circleBtn = p.createButton('● Circle');
+      circleBtn.parent(mobileMenu);
+      circleBtn.style('width', '30%');
+      circleBtn.style('margin', '2px');
+      circleBtn.style('padding', '5px');
+      circleBtn.style('border-radius', '3px');
+      circleBtn.style('border', '1px solid #ccc');
+      circleBtn.style('background-color', currentShape === 'circle' ? '#007bff' : '#f0f0f0');
+      circleBtn.style('color', currentShape === 'circle' ? 'white' : 'black');
+      circleBtn.mousePressed(() => {
+        currentShape = 'circle';
+        updateShapeButtons();
+      });
+      circleBtn.touchStarted(() => {
+        currentShape = 'circle';
+        updateShapeButtons();
+        return false;
+      });
+
+      let squareBtn = p.createButton('■ Square');
+      squareBtn.parent(mobileMenu);
+      squareBtn.style('width', '30%');
+      squareBtn.style('margin', '2px');
+      squareBtn.style('padding', '5px');
+      squareBtn.style('border-radius', '3px');
+      squareBtn.style('border', '1px solid #ccc');
+      squareBtn.style('background-color', currentShape === 'square' ? '#007bff' : '#f0f0f0');
+      squareBtn.style('color', currentShape === 'square' ? 'white' : 'black');
+      squareBtn.mousePressed(() => {
+        currentShape = 'square';
+        updateShapeButtons();
+      });
+      squareBtn.touchStarted(() => {
+        currentShape = 'square';
+        updateShapeButtons();
+        return false;
+      });
+
+      let diamondBtn = p.createButton('◆ Diamond');
+      diamondBtn.parent(mobileMenu);
+      diamondBtn.style('width', '30%');
+      diamondBtn.style('margin', '2px');
+      diamondBtn.style('padding', '5px');
+      diamondBtn.style('border-radius', '3px');
+      diamondBtn.style('border', '1px solid #ccc');
+      diamondBtn.style('background-color', currentShape === 'diamond' ? '#007bff' : '#f0f0f0');
+      diamondBtn.style('color', currentShape === 'diamond' ? 'white' : 'black');
+      diamondBtn.mousePressed(() => {
+        currentShape = 'diamond';
+        updateShapeButtons();
+      });
+      diamondBtn.touchStarted(() => {
+        currentShape = 'diamond';
+        updateShapeButtons();
+        return false;
+      });
+
+      // Store shape buttons for updating
+      mobileMenu.shapeButtons = [circleBtn, squareBtn, diamondBtn];
+
+      // Add sliders to mobile menu
+      p.createP('Motion Controls:').parent(mobileMenu).style('margin-top', '15px').style('margin-bottom', '5px').style('font-weight', 'bold');
+      
+      // Smoothing slider
+      p.createSpan('Smoothing: ').parent(mobileMenu).style('font-size', '12px');
+      let mobileLerpSlider = p.createSlider(0.01, 0.5, LERP_FACTOR, 0.01);
+      mobileLerpSlider.parent(mobileMenu);
+      mobileLerpSlider.style('width', '100%');
+      mobileLerpSlider.style('margin', '5px 0');
+      
+      // Size scale slider
+      p.createSpan('Size Scale: ').parent(mobileMenu).style('font-size', '12px');
+      let mobileScaleSlider = p.createSlider(0.01, 1, SIZE_SCALE_FACTOR, 0.01);
+      mobileScaleSlider.parent(mobileMenu);
+      mobileScaleSlider.style('width', '100%');
+      mobileScaleSlider.style('margin', '5px 0');
+      
+      // Trail length slider
+      p.createSpan('Trail Length: ').parent(mobileMenu).style('font-size', '12px');
+      let mobilePathSlider = p.createSlider(50, 1000, MAX_PATH_POINTS, 10);
+      mobilePathSlider.parent(mobileMenu);
+      mobilePathSlider.style('width', '100%');
+      mobilePathSlider.style('margin', '5px 0');
+      
+      // Circle size slider
+      p.createSpan('Circle Size: ').parent(mobileMenu).style('font-size', '12px');
+      let mobileCircleSizeSlider = p.createSlider(0.1, 0.8, 0.3, 0.01);
+      mobileCircleSizeSlider.parent(mobileMenu);
+      mobileCircleSizeSlider.style('width', '100%');
+      mobileCircleSizeSlider.style('margin', '5px 0');
+      
+      // Store mobile sliders for updating in draw loop
+      mobileMenu.sliders = {
+        lerp: mobileLerpSlider,
+        scale: mobileScaleSlider,
+        path: mobilePathSlider,
+        circleSize: mobileCircleSizeSlider
+      };
 
       // Instructions
       p.createP('💡 Touch and drag to draw').parent(mobileMenu).style('margin-top', '15px').style('font-size', '12px').style('color', '#666');
@@ -361,6 +579,17 @@ const Gradient = (p) => {
       distributions.forEach((dist, i) => {
         buttons[i].style('background-color', sizeDistribution === dist ? '#007bff' : '#f0f0f0');
         buttons[i].style('color', sizeDistribution === dist ? 'white' : 'black');
+      });
+    }
+  };
+
+  const updateShapeButtons = () => {
+    if (mobileMenu && mobileMenu.shapeButtons) {
+      const buttons = mobileMenu.shapeButtons;
+      const shapes = ['circle', 'square', 'diamond'];
+      shapes.forEach((shape, i) => {
+        buttons[i].style('background-color', currentShape === shape ? '#007bff' : '#f0f0f0');
+        buttons[i].style('color', currentShape === shape ? 'white' : 'black');
       });
     }
   };
@@ -466,8 +695,16 @@ const Gradient = (p) => {
       SIZE_SCALE_FACTOR = scaleSlider.value();
       MAX_PATH_POINTS = pathSlider.value();
       circleSize = p.width * circleSizeSlider.value();
+    } else if (isSmallScreen && mobileMenu && mobileMenu.sliders) {
+      // Use mobile sliders when on small screen and mobile menu exists
+      LERP_FACTOR = mobileMenu.sliders.lerp.value();
+      SIZE_SCALE_FACTOR = mobileMenu.sliders.scale.value();
+      MAX_PATH_POINTS = mobileMenu.sliders.path.value();
+      circleSize = p.width * mobileMenu.sliders.circleSize.value();
+    }
 
-      // Update value displays
+    // Update value displays only if desktop control panel is showing
+    if (showControls && controlPanel && rawValuesDisplay && targetValuesDisplay) {
       let rawX = 0, rawY = 0;
       switch (controlMode) {
         case 'mouse':
@@ -599,14 +836,42 @@ const Gradient = (p) => {
         flippedGradient.addColorStop(1, lerpedColor);
         p.drawingContext.strokeStyle = flippedGradient;
 
-        if (showStroke) {
-          p.stroke(255, 255, 255, 0.5);
-          p.strokeWeight(2);
+        // Handle stroke and fill based on hollow mode
+        if (hollowMode) {
+          // Hollow mode: no fill, large stroke with gradient
+          p.noFill();
+          p.strokeWeight(currentCircleSize * 0.15); // Proportional stroke weight
         } else {
-          p.noStroke();
+          // Normal mode: fill with gradient, optional stroke
+          if (showStroke) {
+            p.stroke(255, 255, 255, 0.5);
+            p.strokeWeight(2);
+          } else {
+            p.noStroke();
+          }
         }
 
-        p.ellipse(pt.x, pt.y, currentCircleSize, currentCircleSize);
+        // Draw the appropriate shape based on currentShape
+        p.push();
+        p.translate(pt.x, pt.y);
+        
+        switch (currentShape) {
+          case 'square':
+            p.rectMode(p.CENTER);
+            p.rect(0, 0, currentCircleSize, currentCircleSize);
+            break;
+          case 'diamond':
+            p.rotate(p.PI / 4); // Rotate 45 degrees
+            p.rectMode(p.CENTER);
+            p.rect(0, 0, currentCircleSize, currentCircleSize);
+            break;
+          case 'circle':
+          default:
+            p.ellipse(0, 0, currentCircleSize, currentCircleSize);
+            break;
+        }
+        
+        p.pop();
       }
     }
 
