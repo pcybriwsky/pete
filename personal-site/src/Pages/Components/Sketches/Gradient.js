@@ -61,153 +61,51 @@ const Gradient = (p) => {
   let mobileMenu;
   let mobileMenuButton;
   let showMobileMenu = false;
+  let openAccordionSection = 'quick'; // 'quick', 'size', 'shape', 'motion'
+  let motionErrorModal;
 
-  // --- Helper Functions (from SimpleSun) ---
-  const selectRandomPalette = () => {
-    const paletteNames = Object.keys(palettes);
-    const randomPaletteName = paletteNames[Math.floor(p.random(paletteNames.length))];
-    currentPalette = palettes[randomPaletteName];
-    // Ensure colors are hex strings, handle potential missing '#'
-    colors = Object.values(currentPalette).map(c => c.startsWith('#') ? c : `#${c}`);
-    console.log("Selected Palette:", randomPaletteName);
-  };
-
-  const shufflePalette = () => {
-    // Fisher-Yates (aka Knuth) Shuffle
-    for (let i = colors.length - 1; i > 0; i--) {
-      const j = Math.floor(p.random(i + 1));
-      [colors[i], colors[j]] = [colors[j], colors[i]]; // Swap elements
+  // Helper to close all accordion sections except one
+  const openSection = (section) => {
+    openAccordionSection = section;
+    if (mobileMenu && mobileMenu.accordionSections) {
+      Object.entries(mobileMenu.accordionSections).forEach(([key, sec]) => {
+        sec.content.style('display', key === section ? 'block' : 'none');
+        sec.header.style('background-color', key === section ? '#e0e0e0' : '#f8f8f8');
+      });
     }
-    console.log("Shuffled Palette");
   };
 
-  const generateNoiseTexture = () => {
-    noiseTexture.loadPixels();
-    // Iterate through each pixel (x, y)
-    for (let y = 0; y < noiseTexture.height; y++) {
-      for (let x = 0; x < noiseTexture.width; x++) {
-        // Calculate index for the pixel array (R, G, B, A)
-        let index = (x + y * noiseTexture.width) * 4;
-        // Generate a random gray value
-        const noiseValue = p.random(180, 255);
-        // Generate a random alpha value (0-255 for texture buffer)
-        const alphaValue = p.random(15, 45);
-
-        noiseTexture.pixels[index] = noiseValue;     // R
-        noiseTexture.pixels[index + 1] = noiseValue; // G
-        noiseTexture.pixels[index + 2] = noiseValue; // B
-        noiseTexture.pixels[index + 3] = alphaValue; // A
-      }
-    }
-    noiseTexture.updatePixels();
-    console.log("Generated Noise Texture");
-  };
-
-  const createControlPanel = () => {
-    // Only create desktop control panel on larger screens
-    if (!isSmallScreen) {
-      controlPanel = p.createDiv('');
-      controlPanel.class('control-panel');
-      controlPanel.style('position', 'absolute');
-      controlPanel.style('top', '60px');
-      controlPanel.style('right', '20px');
-      controlPanel.style('background-color', 'rgba(255, 255, 255, 0.9)');
-      controlPanel.style('padding', '20px');
-      controlPanel.style('border-radius', '10px');
-      controlPanel.style('display', 'none');
-      controlPanel.style('font-family', 'monospace');
-
-      // Create value displays at the top
-      p.createP('Input Values:').parent(controlPanel).style('margin-top', '0');
-      rawValuesDisplay = p.createDiv('Raw: x: 0, y: 0').parent(controlPanel);
-      rawValuesDisplay.style('margin-bottom', '10px');
-      targetValuesDisplay = p.createDiv('Target: x: 0, y: 0').parent(controlPanel);
-      targetValuesDisplay.style('margin-bottom', '20px');
-
-      // Create sliders
-      p.createP('Motion Controls:').parent(controlPanel);
-      lerpSlider = p.createSlider(0.01, 0.5, LERP_FACTOR, 0.01);
-      lerpSlider.parent(controlPanel);
-      p.createSpan('Smoothing').parent(controlPanel);
-
-      p.createP('Visual Controls:').parent(controlPanel);
-      scaleSlider = p.createSlider(0.01, 1, SIZE_SCALE_FACTOR, 0.01);
-      scaleSlider.parent(controlPanel);
-      p.createSpan('Size Scale').parent(controlPanel);
-
-      pathSlider = p.createSlider(50, 1000, MAX_PATH_POINTS, 10);
-      pathSlider.parent(controlPanel);
-      p.createSpan('Trail Length').parent(controlPanel);
-
-      circleSizeSlider = p.createSlider(0.1, 0.8, 0.3, 0.01);
-      circleSizeSlider.parent(controlPanel);
-      p.createSpan('Circle Size').parent(controlPanel);
-
-      // Create dropdowns
-      p.createP('Style Controls:').parent(controlPanel);
-      paletteSelect = p.createSelect();
-      paletteSelect.parent(controlPanel);
-      Object.keys(palettes).forEach(name => paletteSelect.option(name));
-      paletteSelect.selected(selectedPaletteName);
-      paletteSelect.changed(() => {
-        selectedPaletteName = paletteSelect.value();
-        currentPalette = palettes[selectedPaletteName];
-        colors = Object.values(currentPalette).map(c => c.startsWith('#') ? c : `#${c}`);
-        shufflePalette();
-      });
-
-      modeSelect = p.createSelect();
-      modeSelect.parent(controlPanel);
-      modeSelect.option('mouse');
-      modeSelect.option('orientation', 'magic_orientation');
-      modeSelect.option('device orientation', 'device_orientation');
-      modeSelect.option('joystick');
-      modeSelect.selected(controlMode);
-      modeSelect.changed(() => {
-        controlMode = modeSelect.value();
-        if (controlMode === 'magic_orientation' && !isMagic) {
-          connectMagic();
-        } else if (controlMode === 'device_orientation' && !hasDeviceOrientation) {
-          requestDeviceOrientation();
-        }
-      });
-
-      // Add size distribution control
-      p.createP('Size Distribution:').parent(controlPanel);
-      sizeDistributionSelect = p.createSelect();
-      sizeDistributionSelect.parent(controlPanel);
-      sizeDistributionSelect.option('Largest at End', 'end');
-      sizeDistributionSelect.option('Largest at Start', 'start');
-      sizeDistributionSelect.option('Largest in Middle', 'middle');
-      sizeDistributionSelect.selected(sizeDistribution);
-      sizeDistributionSelect.changed(() => {
-        sizeDistribution = sizeDistributionSelect.value();
-      });
-
-      // Add shape selector
-      p.createP('Shape:').parent(controlPanel);
-      shapeSelect = p.createSelect();
-      shapeSelect.parent(controlPanel);
-      shapeSelect.option('Circle', 'circle');
-      shapeSelect.option('Square', 'square');
-      shapeSelect.option('Diamond', 'diamond');
-      shapeSelect.selected(currentShape);
-      shapeSelect.changed(() => {
-        currentShape = shapeSelect.value();
-      });
-
-      // Create checkboxes
-      strokeCheckbox = p.createCheckbox('Show Stroke', showStroke);
-      strokeCheckbox.parent(controlPanel);
-      strokeCheckbox.changed(() => {
-        showStroke = strokeCheckbox.checked();
-      });
-
-      hollowCheckbox = p.createCheckbox('Hollow Mode', hollowMode);
-      hollowCheckbox.parent(controlPanel);
-      hollowCheckbox.changed(() => {
-        hollowMode = hollowCheckbox.checked();
-      });
+  // Helper to show/hide the motion error modal
+  const showMotionErrorModal = (msg) => {
+    if (!motionErrorModal) {
+      motionErrorModal = p.createDiv('');
+      motionErrorModal.class('modal');
+      motionErrorModal.style('position', 'fixed');
+      motionErrorModal.style('top', '0');
+      motionErrorModal.style('left', '0');
+      motionErrorModal.style('width', '100vw');
+      motionErrorModal.style('height', '100vh');
+      motionErrorModal.style('background', 'rgba(0,0,0,0.5)');
+      motionErrorModal.style('display', 'flex');
+      motionErrorModal.style('align-items', 'center');
+      motionErrorModal.style('justify-content', 'center');
+      motionErrorModal.style('z-index', '2000');
+      let modalBox = p.createDiv('');
+      modalBox.style('background', 'white');
+      modalBox.style('padding', '24px');
+      modalBox.style('border-radius', '12px');
+      modalBox.style('max-width', '80vw');
+      modalBox.style('font-family', 'monospace');
+      modalBox.style('text-align', 'center');
+      let msgDiv = p.createP(msg);
+      msgDiv.parent(modalBox);
+      let closeBtn = p.createButton('Close');
+      closeBtn.parent(modalBox);
+      closeBtn.style('margin-top', '16px');
+      closeBtn.mousePressed(() => motionErrorModal.remove());
+      closeBtn.touchStarted(() => { motionErrorModal.remove(); return false; });
+      modalBox.parent(motionErrorModal);
+      motionErrorModal.parent(document.body);
     }
   };
 
@@ -248,20 +146,31 @@ const Gradient = (p) => {
       mobileMenu.style('top', '70px');
       mobileMenu.style('left', '10px');
       mobileMenu.style('background-color', 'rgba(255, 255, 255, 0.95)');
-      mobileMenu.style('padding', '15px');
+      mobileMenu.style('padding', '0');
       mobileMenu.style('border-radius', '10px');
       mobileMenu.style('display', 'none');
       mobileMenu.style('font-family', 'monospace');
       mobileMenu.style('font-size', '14px');
-      mobileMenu.style('max-width', '280px');
+      mobileMenu.style('max-width', '320px');
       mobileMenu.style('z-index', '999');
+      mobileMenu.style('overflow-y', 'auto');
+      mobileMenu.style('max-height', '80vh');
+      mobileMenu.accordionSections = {};
 
-      // Create mobile controls
-      p.createP('Quick Controls').parent(mobileMenu).style('margin-top', '0').style('font-weight', 'bold');
-      
-      // Random palette button
+      // --- Accordion Section: Quick Controls ---
+      let quickHeader = p.createDiv('Quick Controls');
+      quickHeader.parent(mobileMenu);
+      quickHeader.style('font-weight', 'bold');
+      quickHeader.style('padding', '12px');
+      quickHeader.style('cursor', 'pointer');
+      quickHeader.style('background-color', openAccordionSection === 'quick' ? '#e0e0e0' : '#f8f8f8');
+      let quickContent = p.createDiv('');
+      quickContent.parent(mobileMenu);
+      quickContent.style('display', openAccordionSection === 'quick' ? 'block' : 'none');
+      quickContent.style('padding', '10px');
+      // Add quick controls here (randomBtn, strokeBtn, hollowBtn, motionBtn, saveBtn)
       let randomBtn = p.createButton('🎨 Random Palette');
-      randomBtn.parent(mobileMenu);
+      randomBtn.parent(quickContent);
       randomBtn.style('width', '100%');
       randomBtn.style('margin', '5px 0');
       randomBtn.style('padding', '8px');
@@ -280,7 +189,7 @@ const Gradient = (p) => {
 
       // Toggle stroke button
       let strokeBtn = p.createButton(showStroke ? '✏️ Hide Stroke' : '✏️ Show Stroke');
-      strokeBtn.parent(mobileMenu);
+      strokeBtn.parent(quickContent);
       strokeBtn.style('width', '100%');
       strokeBtn.style('margin', '5px 0');
       strokeBtn.style('padding', '8px');
@@ -299,7 +208,7 @@ const Gradient = (p) => {
 
       // Hollow mode button
       let hollowBtn = p.createButton(hollowMode ? '🔲 Solid Mode' : '🔲 Hollow Mode');
-      hollowBtn.parent(mobileMenu);
+      hollowBtn.parent(quickContent);
       hollowBtn.style('width', '100%');
       hollowBtn.style('margin', '5px 0');
       hollowBtn.style('padding', '8px');
@@ -323,7 +232,7 @@ const Gradient = (p) => {
 
       // Motion control permission button
       let motionBtn = p.createButton(hasDeviceOrientation ? '📱 Motion Active' : '📱 Enable Motion');
-      motionBtn.parent(mobileMenu);
+      motionBtn.parent(quickContent);
       motionBtn.style('width', '100%');
       motionBtn.style('margin', '5px 0');
       motionBtn.style('padding', '8px');
@@ -347,6 +256,8 @@ const Gradient = (p) => {
             motionBtn.html('❌ Motion Failed');
             motionBtn.style('background-color', '#dc3545');
             motionBtn.style('color', 'white');
+            // Show modal for permission errors
+            showMotionErrorModal('Motion permission denied. Please enable it in your device settings.');
             // Reset button after 2 seconds
             setTimeout(() => {
               motionBtn.html('📱 Enable Motion');
@@ -372,6 +283,8 @@ const Gradient = (p) => {
             motionBtn.html('❌ Motion Failed');
             motionBtn.style('background-color', '#dc3545');
             motionBtn.style('color', 'white');
+            // Show modal for permission errors
+            showMotionErrorModal('Motion permission denied. Please enable it in your device settings.');
             // Reset button after 2 seconds
             setTimeout(() => {
               motionBtn.html('📱 Enable Motion');
@@ -385,7 +298,7 @@ const Gradient = (p) => {
 
       // Save button
       let saveBtn = p.createButton('💾 Save Image');
-      saveBtn.parent(mobileMenu);
+      saveBtn.parent(quickContent);
       saveBtn.style('width', '100%');
       saveBtn.style('margin', '5px 0');
       saveBtn.style('padding', '8px');
@@ -401,12 +314,25 @@ const Gradient = (p) => {
         console.log("Saved canvas to gradient-path.png");
         return false;
       });
+      // End quick controls
+      quickHeader.mousePressed(() => openSection('quick'));
+      quickHeader.touchStarted(() => { openSection('quick'); return false; });
+      mobileMenu.accordionSections.quick = { header: quickHeader, content: quickContent };
 
-      // Size distribution buttons
-      p.createP('Size Distribution:').parent(mobileMenu).style('margin-top', '15px').style('margin-bottom', '5px');
-      
+      // --- Accordion Section: Size Distribution ---
+      let sizeHeader = p.createDiv('Size Distribution');
+      sizeHeader.parent(mobileMenu);
+      sizeHeader.style('font-weight', 'bold');
+      sizeHeader.style('padding', '12px');
+      sizeHeader.style('cursor', 'pointer');
+      sizeHeader.style('background-color', openAccordionSection === 'size' ? '#e0e0e0' : '#f8f8f8');
+      let sizeContent = p.createDiv('');
+      sizeContent.parent(mobileMenu);
+      sizeContent.style('display', openAccordionSection === 'size' ? 'block' : 'none');
+      sizeContent.style('padding', '10px');
+      // Add size distribution buttons here (endBtn, startBtn, middleBtn)
       let endBtn = p.createButton('End');
-      endBtn.parent(mobileMenu);
+      endBtn.parent(sizeContent);
       endBtn.style('width', '30%');
       endBtn.style('margin', '2px');
       endBtn.style('padding', '5px');
@@ -425,7 +351,7 @@ const Gradient = (p) => {
       });
 
       let startBtn = p.createButton('Start');
-      startBtn.parent(mobileMenu);
+      startBtn.parent(sizeContent);
       startBtn.style('width', '30%');
       startBtn.style('margin', '2px');
       startBtn.style('padding', '5px');
@@ -444,7 +370,7 @@ const Gradient = (p) => {
       });
 
       let middleBtn = p.createButton('Middle');
-      middleBtn.parent(mobileMenu);
+      middleBtn.parent(sizeContent);
       middleBtn.style('width', '30%');
       middleBtn.style('margin', '2px');
       middleBtn.style('padding', '5px');
@@ -461,15 +387,25 @@ const Gradient = (p) => {
         updateSizeButtons();
         return false;
       });
+      // End size distribution
+      sizeHeader.mousePressed(() => openSection('size'));
+      sizeHeader.touchStarted(() => { openSection('size'); return false; });
+      mobileMenu.accordionSections.size = { header: sizeHeader, content: sizeContent };
 
-      // Store buttons for updating
-      mobileMenu.sizeButtons = [endBtn, startBtn, middleBtn];
-
-      // Add shape selector
-      p.createP('Shape:').parent(mobileMenu).style('margin-top', '15px').style('margin-bottom', '5px');
-      
+      // --- Accordion Section: Shape ---
+      let shapeHeader = p.createDiv('Shape');
+      shapeHeader.parent(mobileMenu);
+      shapeHeader.style('font-weight', 'bold');
+      shapeHeader.style('padding', '12px');
+      shapeHeader.style('cursor', 'pointer');
+      shapeHeader.style('background-color', openAccordionSection === 'shape' ? '#e0e0e0' : '#f8f8f8');
+      let shapeContent = p.createDiv('');
+      shapeContent.parent(mobileMenu);
+      shapeContent.style('display', openAccordionSection === 'shape' ? 'block' : 'none');
+      shapeContent.style('padding', '10px');
+      // Add shape buttons here (circleBtn, squareBtn, diamondBtn)
       let circleBtn = p.createButton('● Circle');
-      circleBtn.parent(mobileMenu);
+      circleBtn.parent(shapeContent);
       circleBtn.style('width', '30%');
       circleBtn.style('margin', '2px');
       circleBtn.style('padding', '5px');
@@ -488,7 +424,7 @@ const Gradient = (p) => {
       });
 
       let squareBtn = p.createButton('■ Square');
-      squareBtn.parent(mobileMenu);
+      squareBtn.parent(shapeContent);
       squareBtn.style('width', '30%');
       squareBtn.style('margin', '2px');
       squareBtn.style('padding', '5px');
@@ -507,7 +443,7 @@ const Gradient = (p) => {
       });
 
       let diamondBtn = p.createButton('◆ Diamond');
-      diamondBtn.parent(mobileMenu);
+      diamondBtn.parent(shapeContent);
       diamondBtn.style('width', '30%');
       diamondBtn.style('margin', '2px');
       diamondBtn.style('padding', '5px');
@@ -524,38 +460,44 @@ const Gradient = (p) => {
         updateShapeButtons();
         return false;
       });
+      // End shape
+      shapeHeader.mousePressed(() => openSection('shape'));
+      shapeHeader.touchStarted(() => { openSection('shape'); return false; });
+      mobileMenu.accordionSections.shape = { header: shapeHeader, content: shapeContent };
 
-      // Store shape buttons for updating
-      mobileMenu.shapeButtons = [circleBtn, squareBtn, diamondBtn];
-
-      // Add sliders to mobile menu
-      p.createP('Motion Controls:').parent(mobileMenu).style('margin-top', '15px').style('margin-bottom', '5px').style('font-weight', 'bold');
-      
-      // Smoothing slider
-      p.createSpan('Smoothing: ').parent(mobileMenu).style('font-size', '12px');
+      // --- Accordion Section: Motion Controls ---
+      let motionHeader = p.createDiv('Motion Controls');
+      motionHeader.parent(mobileMenu);
+      motionHeader.style('font-weight', 'bold');
+      motionHeader.style('padding', '12px');
+      motionHeader.style('cursor', 'pointer');
+      motionHeader.style('background-color', openAccordionSection === 'motion' ? '#e0e0e0' : '#f8f8f8');
+      let motionContent = p.createDiv('');
+      motionContent.parent(mobileMenu);
+      motionContent.style('display', openAccordionSection === 'motion' ? 'block' : 'none');
+      motionContent.style('padding', '10px');
+      // Add sliders here (mobileLerpSlider, mobileScaleSlider, mobilePathSlider, mobileCircleSizeSlider)
+      p.createSpan('Smoothing: ').parent(motionContent).style('font-size', '12px');
       let mobileLerpSlider = p.createSlider(0.01, 0.5, LERP_FACTOR, 0.01);
-      mobileLerpSlider.parent(mobileMenu);
+      mobileLerpSlider.parent(motionContent);
       mobileLerpSlider.style('width', '100%');
       mobileLerpSlider.style('margin', '5px 0');
       
-      // Size scale slider
-      p.createSpan('Size Scale: ').parent(mobileMenu).style('font-size', '12px');
+      p.createSpan('Size Scale: ').parent(motionContent).style('font-size', '12px');
       let mobileScaleSlider = p.createSlider(0.01, 1, SIZE_SCALE_FACTOR, 0.01);
-      mobileScaleSlider.parent(mobileMenu);
+      mobileScaleSlider.parent(motionContent);
       mobileScaleSlider.style('width', '100%');
       mobileScaleSlider.style('margin', '5px 0');
       
-      // Trail length slider
-      p.createSpan('Trail Length: ').parent(mobileMenu).style('font-size', '12px');
+      p.createSpan('Trail Length: ').parent(motionContent).style('font-size', '12px');
       let mobilePathSlider = p.createSlider(50, 1000, MAX_PATH_POINTS, 10);
-      mobilePathSlider.parent(mobileMenu);
+      mobilePathSlider.parent(motionContent);
       mobilePathSlider.style('width', '100%');
       mobilePathSlider.style('margin', '5px 0');
       
-      // Circle size slider
-      p.createSpan('Circle Size: ').parent(mobileMenu).style('font-size', '12px');
+      p.createSpan('Circle Size: ').parent(motionContent).style('font-size', '12px');
       let mobileCircleSizeSlider = p.createSlider(0.1, 0.8, 0.3, 0.01);
-      mobileCircleSizeSlider.parent(mobileMenu);
+      mobileCircleSizeSlider.parent(motionContent);
       mobileCircleSizeSlider.style('width', '100%');
       mobileCircleSizeSlider.style('margin', '5px 0');
       
@@ -566,6 +508,10 @@ const Gradient = (p) => {
         path: mobilePathSlider,
         circleSize: mobileCircleSizeSlider
       };
+      // End motion controls
+      motionHeader.mousePressed(() => openSection('motion'));
+      motionHeader.touchStarted(() => { openSection('motion'); return false; });
+      mobileMenu.accordionSections.motion = { header: motionHeader, content: motionContent };
 
       // Instructions
       p.createP('💡 Touch and drag to draw').parent(mobileMenu).style('margin-top', '15px').style('font-size', '12px').style('color', '#666');
@@ -590,6 +536,148 @@ const Gradient = (p) => {
       shapes.forEach((shape, i) => {
         buttons[i].style('background-color', currentShape === shape ? '#007bff' : '#f0f0f0');
         buttons[i].style('color', currentShape === shape ? 'white' : 'black');
+      });
+    }
+  };
+
+  // --- Helper Functions (restored) ---
+  const selectRandomPalette = () => {
+    const paletteNames = Object.keys(palettes);
+    const randomPaletteName = paletteNames[Math.floor(p.random(paletteNames.length))];
+    currentPalette = palettes[randomPaletteName];
+    // Ensure colors are hex strings, handle potential missing '#'
+    colors = Object.values(currentPalette).map(c => c.startsWith('#') ? c : `#${c}`);
+    console.log("Selected Palette:", randomPaletteName);
+  };
+
+  const shufflePalette = () => {
+    // Fisher-Yates (aka Knuth) Shuffle
+    for (let i = colors.length - 1; i > 0; i--) {
+      const j = Math.floor(p.random(i + 1));
+      [colors[i], colors[j]] = [colors[j], colors[i]]; // Swap elements
+    }
+    console.log("Shuffled Palette");
+  };
+
+  const generateNoiseTexture = () => {
+    noiseTexture.loadPixels();
+    // Iterate through each pixel (x, y)
+    for (let y = 0; y < noiseTexture.height; y++) {
+      for (let x = 0; x < noiseTexture.width; x++) {
+        // Calculate index for the pixel array (R, G, B, A)
+        let index = (x + y * noiseTexture.width) * 4;
+        // Generate a random gray value
+        const noiseValue = p.random(180, 255);
+        // Generate a random alpha value (0-255 for texture buffer)
+        const alphaValue = p.random(15, 45);
+        noiseTexture.pixels[index] = noiseValue;     // R
+        noiseTexture.pixels[index + 1] = noiseValue; // G
+        noiseTexture.pixels[index + 2] = noiseValue; // B
+        noiseTexture.pixels[index + 3] = alphaValue; // A
+      }
+    }
+    noiseTexture.updatePixels();
+    console.log("Generated Noise Texture");
+  };
+
+  // Restore createControlPanel for desktop controls
+  const createControlPanel = () => {
+    if (!isSmallScreen) {
+      controlPanel = p.createDiv('');
+      controlPanel.class('control-panel');
+      controlPanel.style('position', 'absolute');
+      controlPanel.style('top', '60px');
+      controlPanel.style('right', '20px');
+      controlPanel.style('background-color', 'rgba(255, 255, 255, 0.9)');
+      controlPanel.style('padding', '20px');
+      controlPanel.style('border-radius', '10px');
+      controlPanel.style('display', 'none');
+      controlPanel.style('font-family', 'monospace');
+
+      p.createP('Input Values:').parent(controlPanel).style('margin-top', '0');
+      rawValuesDisplay = p.createDiv('Raw: x: 0, y: 0').parent(controlPanel);
+      rawValuesDisplay.style('margin-bottom', '10px');
+      targetValuesDisplay = p.createDiv('Target: x: 0, y: 0').parent(controlPanel);
+      targetValuesDisplay.style('margin-bottom', '20px');
+
+      p.createP('Motion Controls:').parent(controlPanel);
+      lerpSlider = p.createSlider(0.01, 0.5, LERP_FACTOR, 0.01);
+      lerpSlider.parent(controlPanel);
+      p.createSpan('Smoothing').parent(controlPanel);
+
+      p.createP('Visual Controls:').parent(controlPanel);
+      scaleSlider = p.createSlider(0.01, 1, SIZE_SCALE_FACTOR, 0.01);
+      scaleSlider.parent(controlPanel);
+      p.createSpan('Size Scale').parent(controlPanel);
+
+      pathSlider = p.createSlider(50, 1000, MAX_PATH_POINTS, 10);
+      pathSlider.parent(controlPanel);
+      p.createSpan('Trail Length').parent(controlPanel);
+
+      circleSizeSlider = p.createSlider(0.1, 0.8, 0.3, 0.01);
+      circleSizeSlider.parent(controlPanel);
+      p.createSpan('Circle Size').parent(controlPanel);
+
+      p.createP('Style Controls:').parent(controlPanel);
+      paletteSelect = p.createSelect();
+      paletteSelect.parent(controlPanel);
+      Object.keys(palettes).forEach(name => paletteSelect.option(name));
+      paletteSelect.selected(selectedPaletteName);
+      paletteSelect.changed(() => {
+        selectedPaletteName = paletteSelect.value();
+        currentPalette = palettes[selectedPaletteName];
+        colors = Object.values(currentPalette).map(c => c.startsWith('#') ? c : `#${c}`);
+        shufflePalette();
+      });
+
+      modeSelect = p.createSelect();
+      modeSelect.parent(controlPanel);
+      modeSelect.option('mouse');
+      modeSelect.option('orientation', 'magic_orientation');
+      modeSelect.option('device orientation', 'device_orientation');
+      modeSelect.option('joystick');
+      modeSelect.selected(controlMode);
+      modeSelect.changed(() => {
+        controlMode = modeSelect.value();
+        if (controlMode === 'magic_orientation' && !isMagic) {
+          connectMagic();
+        } else if (controlMode === 'device_orientation' && !hasDeviceOrientation) {
+          requestDeviceOrientation();
+        }
+      });
+
+      p.createP('Size Distribution:').parent(controlPanel);
+      sizeDistributionSelect = p.createSelect();
+      sizeDistributionSelect.parent(controlPanel);
+      sizeDistributionSelect.option('Largest at End', 'end');
+      sizeDistributionSelect.option('Largest at Start', 'start');
+      sizeDistributionSelect.option('Largest in Middle', 'middle');
+      sizeDistributionSelect.selected(sizeDistribution);
+      sizeDistributionSelect.changed(() => {
+        sizeDistribution = sizeDistributionSelect.value();
+      });
+
+      p.createP('Shape:').parent(controlPanel);
+      shapeSelect = p.createSelect();
+      shapeSelect.parent(controlPanel);
+      shapeSelect.option('Circle', 'circle');
+      shapeSelect.option('Square', 'square');
+      shapeSelect.option('Diamond', 'diamond');
+      shapeSelect.selected(currentShape);
+      shapeSelect.changed(() => {
+        currentShape = shapeSelect.value();
+      });
+
+      strokeCheckbox = p.createCheckbox('Show Stroke', showStroke);
+      strokeCheckbox.parent(controlPanel);
+      strokeCheckbox.changed(() => {
+        showStroke = strokeCheckbox.checked();
+      });
+
+      hollowCheckbox = p.createCheckbox('Hollow Mode', hollowMode);
+      hollowCheckbox.parent(controlPanel);
+      hollowCheckbox.changed(() => {
+        hollowMode = hollowCheckbox.checked();
       });
     }
   };
