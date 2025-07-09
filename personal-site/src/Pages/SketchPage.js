@@ -101,7 +101,9 @@ const SketchPage = () => {
   const sketch = sketchMap[sketchName];
 
   useEffect(() => {
+    console.log('Attaching motion test handler');
     const handler = async () => {
+      console.log('Test motion button tapped');
       if (
         typeof DeviceMotionEvent !== 'undefined' &&
         typeof DeviceMotionEvent.requestPermission === 'function'
@@ -135,9 +137,15 @@ const SketchPage = () => {
       }
     };
     const btn = document.getElementById('test-motion-btn');
-    if (btn) btn.addEventListener('click', handler);
+    if (btn) {
+      btn.addEventListener('click', handler);
+      btn.addEventListener('touchstart', handler);
+    }
     return () => {
-      if (btn) btn.removeEventListener('click', handler);
+      if (btn) {
+        btn.removeEventListener('click', handler);
+        btn.removeEventListener('touchstart', handler);
+      }
     };
   }, []);
 
@@ -167,7 +175,8 @@ const SketchPage = () => {
           bottom: "20px",
           left: "50%",
           transform: "translateX(-50%)",
-          zIndex: 9999,
+          zIndex: 99999,
+          pointerEvents: "auto",
           padding: "12px 24px",
           fontSize: "16px",
           borderRadius: "8px",
