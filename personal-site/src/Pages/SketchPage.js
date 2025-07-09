@@ -100,40 +100,50 @@ const SketchPage = () => {
   
   const sketch = sketchMap[sketchName];
 
-  // Handler for the test button, attached directly in JSX
-  const handleMotionTest = async () => {
-    if (
-      typeof DeviceMotionEvent !== 'undefined' &&
-      typeof DeviceMotionEvent.requestPermission === 'function'
-    ) {
-      try {
-        const motion = await DeviceMotionEvent.requestPermission();
-        const orient = await DeviceOrientationEvent.requestPermission();
-        alert(
-          'DeviceMotionEvent: ' +
-            motion +
-            '\nDeviceOrientationEvent: ' +
-            orient
-        );
-        if (motion === 'granted' || orient === 'granted') {
-          window.addEventListener(
-            'deviceorientation',
-            (e) => {
-              alert(
-                'Orientation event received!\n' +
-                  JSON.stringify(e, null, 2)
-              );
-            },
-            { once: true }
+  // Handler for the native test button, attached in useEffect
+  useEffect(() => {
+    const btn = document.getElementById("native-motion-btn");
+    if (!btn) return;
+    const handler = async () => {
+      if (
+        typeof DeviceMotionEvent !== "undefined" &&
+        typeof DeviceMotionEvent.requestPermission === "function"
+      ) {
+        try {
+          const motion = await DeviceMotionEvent.requestPermission();
+          const orient = await DeviceOrientationEvent.requestPermission();
+          alert(
+            "DeviceMotionEvent: " +
+              motion +
+              "\nDeviceOrientationEvent: " +
+              orient
           );
+          if (motion === "granted" || orient === "granted") {
+            window.addEventListener(
+              "deviceorientation",
+              (e) => {
+                alert(
+                  "Orientation event received!\n" +
+                    JSON.stringify(e, null, 2)
+                );
+              },
+              { once: true }
+            );
+          }
+        } catch (err) {
+          alert("Error requesting permission: " + err);
         }
-      } catch (err) {
-        alert('Error requesting permission: ' + err);
+      } else {
+        alert("requestPermission not supported on this device/browser.");
       }
-    } else {
-      alert('requestPermission not supported on this device/browser.');
-    }
-  };
+    };
+    btn.addEventListener("click", handler);
+    btn.addEventListener("touchstart", handler);
+    return () => {
+      btn.removeEventListener("click", handler);
+      btn.removeEventListener("touchstart", handler);
+    };
+  }, []);
 
   if (!sketch) {
     return (
@@ -153,28 +163,31 @@ const SketchPage = () => {
       <div className="w-full max-w-3xl mx-auto items-center justify-center aspect-[9/16]">
         <P5Wrapper sketch={sketch.component} />
       </div>
-      {/* Add the test button */}
-      <button
-        id="test-motion-btn"
-        style={{
-          position: "fixed",
-          bottom: "20px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 99999,
-          pointerEvents: "auto",
-          padding: "12px 24px",
-          fontSize: "16px",
-          borderRadius: "8px",
-          background: "#fff",
-          border: "1px solid #ccc",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
+      {/* Add the native test button using dangerouslySetInnerHTML */}
+      <div
+        id="native-motion-btn-container"
+        dangerouslySetInnerHTML={{
+          __html: `
+            <button id="native-motion-btn"
+              style="
+                position:fixed;
+                bottom:80px;
+                left:50%;
+                transform:translateX(-50%);
+                z-index:99999;
+                pointer-events:auto;
+                padding:12px 24px;
+                font-size:16px;
+                border-radius:8px;
+                background:#fff;
+                border:1px solid #ccc;
+                box-shadow:0 2px 8px rgba(0,0,0,0.08);
+              ">
+              Native Test Motion Permission
+            </button>
+          `
         }}
-        onClick={handleMotionTest}
-        onTouchStart={handleMotionTest}
-      >
-        Test Motion Permission New
-      </button>
+      />
     </div>
   );
 };
