@@ -213,6 +213,13 @@ const Gradient = (p) => {
         mobileMenu.style('display', showMobileMenu ? 'block' : 'none');
         mobileMenuButton.html(showMobileMenu ? '×' : '☰');
       });
+      // Add touch event handlers for mobile
+      mobileMenuButton.touchStarted(() => {
+        showMobileMenu = !showMobileMenu;
+        mobileMenu.style('display', showMobileMenu ? 'block' : 'none');
+        mobileMenuButton.html(showMobileMenu ? '×' : '☰');
+        return false; // Prevent default touch behavior
+      });
 
       // Create mobile menu panel
       mobileMenu = p.createDiv('');
@@ -245,6 +252,11 @@ const Gradient = (p) => {
         selectRandomPalette();
         shufflePalette();
       });
+      randomBtn.touchStarted(() => {
+        selectRandomPalette();
+        shufflePalette();
+        return false;
+      });
 
       // Toggle stroke button
       let strokeBtn = p.createButton(showStroke ? '✏️ Hide Stroke' : '✏️ Show Stroke');
@@ -259,6 +271,11 @@ const Gradient = (p) => {
         showStroke = !showStroke;
         strokeBtn.html(showStroke ? '✏️ Hide Stroke' : '✏️ Show Stroke');
       });
+      strokeBtn.touchStarted(() => {
+        showStroke = !showStroke;
+        strokeBtn.html(showStroke ? '✏️ Hide Stroke' : '✏️ Show Stroke');
+        return false;
+      });
 
       // Save button
       let saveBtn = p.createButton('💾 Save Image');
@@ -272,6 +289,11 @@ const Gradient = (p) => {
       saveBtn.mousePressed(() => {
         p.save('gradient-path.png');
         console.log("Saved canvas to gradient-path.png");
+      });
+      saveBtn.touchStarted(() => {
+        p.save('gradient-path.png');
+        console.log("Saved canvas to gradient-path.png");
+        return false;
       });
 
       // Size distribution buttons
@@ -289,6 +311,11 @@ const Gradient = (p) => {
       endBtn.mousePressed(() => {
         sizeDistribution = 'end';
         updateSizeButtons();
+      });
+      endBtn.touchStarted(() => {
+        sizeDistribution = 'end';
+        updateSizeButtons();
+        return false;
       });
 
       let startBtn = p.createButton('Start');
