@@ -166,6 +166,7 @@ const SketchPage = () => {
       {/* Add the native test button using dangerouslySetInnerHTML */}
       <div
         id="native-motion-btn-container"
+        style={{ display: 'none' }}
         dangerouslySetInnerHTML={{
           __html: `
             <button id="native-motion-btn"
