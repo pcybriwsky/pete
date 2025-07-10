@@ -5,7 +5,7 @@ const Gradient = (p) => {
   // --- Control Panel Variables ---
   let showControls = false;
   let controlMode = 'mouse'; // 'mouse', 'orientation', 'device_orientation', or 'joystick'
-  let showStroke = true;
+  let showStroke = false;
   let hollowMode = false; // When true, shows only stroke with no fill
   let currentShape = 'circle'; // 'circle', 'square', or 'diamond'
   let isMagic = false;
@@ -227,6 +227,30 @@ const Gradient = (p) => {
         hollowBtn.html(hollowMode ? '🔲 Solid Mode' : '🔲 Hollow Mode');
         hollowBtn.style('background-color', hollowMode ? '#007bff' : '#f0f0f0');
         hollowBtn.style('color', hollowMode ? 'white' : 'black');
+        return false;
+      });
+
+      // Magic Orientation button
+      let magicBtn = p.createButton('🪄 Magic Orientation');
+      magicBtn.parent(quickContent);
+      magicBtn.style('width', '100%');
+      magicBtn.style('margin', '5px 0');
+      magicBtn.style('padding', '8px');
+      magicBtn.style('border-radius', '5px');
+      magicBtn.style('border', '1px solid #ccc');
+      magicBtn.style('background-color', controlMode === 'magic_orientation' ? '#007bff' : '#f0f0f0');
+      magicBtn.style('color', controlMode === 'magic_orientation' ? 'white' : 'black');
+      magicBtn.mousePressed(async () => {
+        controlMode = 'magic_orientation';
+        await connectMagic();
+        magicBtn.style('background-color', '#007bff');
+        magicBtn.style('color', 'white');
+      });
+      magicBtn.touchStarted(async () => {
+        controlMode = 'magic_orientation';
+        await connectMagic();
+        magicBtn.style('background-color', '#007bff');
+        magicBtn.style('color', 'white');
         return false;
       });
 
@@ -789,9 +813,9 @@ const Gradient = (p) => {
     backgroundGradient.addColorStop(1, slightlyDarkerOffWhite);
     p.drawingContext.fillStyle = backgroundGradient;
     p.noStroke();
-    // p.rect(0, 0, p.width, p.height);
+    p.rect(0, 0, p.width, p.height);
     p.pop();
-    p.clear();
+    // p.clear();
 
     // Update variables from controls if they're showing
     if (showControls && controlPanel) {
@@ -817,8 +841,10 @@ const Gradient = (p) => {
           break;
         case 'magic_orientation':
           if (isMagic && magic.modules.imu?.orientation) {
-            rawX = magic.modules.imu.orientation.w;
-            rawY = magic.modules.imu.orientation.y;
+            let inv1 = -1;
+            
+            rawY = magic.modules.imu.orientation.w;
+            rawX = magic.modules.imu.orientation.y;
           }
           break;
         case 'device_orientation':
@@ -854,10 +880,10 @@ const Gradient = (p) => {
         break;
       case 'magic_orientation':
         if (isMagic && magic.modules.imu?.orientation) {
-          let invertX = -1;
-          let invertY = 1;
-          let rotW = magic.modules.imu.orientation.w * invertX;
-          let rotY = magic.modules.imu.orientation.y * invertY;
+          let invertX = 1;
+          let invertY = -1;
+          let rotY = magic.modules.imu.orientation.w * invertX;
+          let rotW = magic.modules.imu.orientation.y * invertY;
           targetX = p.map(-rotW, -0.3, 0.3, 0, p.width, true);
           targetY = p.map(-rotY, -0.3, 0.3, 0, p.height, true);
         }
