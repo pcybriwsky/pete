@@ -87,7 +87,11 @@ const sketchMap = {
                       'growthrings': {
                           component: 'Trees',
                           displayName: 'Growth Rings'
-                        }
+                        },
+                        'heart2Heart': {
+                            component: 'Heart2Heart',
+                            displayName: 'Heart2heart'
+                          }
 };
 
 const SketchPage = () => {

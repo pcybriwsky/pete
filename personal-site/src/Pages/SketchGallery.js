@@ -127,7 +127,13 @@ const sketches = [
                             title: 'Growth Rings',
                             description: 'A visualization of Substack data as generative growth rings.',
                             instructions: 'Use "R" to change palettes. Use "P" to toggle the palette name. Use "S" to save.'
-                          }
+                          },
+                          {
+                              id: 'heart2Heart',
+                              title: 'Heart2heart',
+                              description: 'A new creative sketch description.',
+                              instructions: 'Instructions for the new sketch.'
+                            }
 ];
 
 const SketchGallery = () => {

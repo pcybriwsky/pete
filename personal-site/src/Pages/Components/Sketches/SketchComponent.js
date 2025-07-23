@@ -8,6 +8,7 @@ import Flowfield from './Flowfield';
 import Sun from './SimpleSun';
 import SunAndMoon from './SunAndMoon';
 import Lenticular from './Lenticular';
+import Heart2Heart from './Heart2Heart';
 import Trees from './Trees';
 import ColorBlend from './ColorBlend';
 import ThermalTest from './ThermalTest';
@@ -43,7 +44,8 @@ const sketchMap = {
   Hearts,
   ThermalTest,
   ColorBlend,
-  Trees
+  Trees,
+  Heart2Heart
 };
 
 const P5Wrapper = ({ sketch }) => {
