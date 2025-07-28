@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import P5Wrapper from './Components/Sketches/SketchComponent';
+import Sketch3DWrapper from './Components/Sketches/Sketch3DComponent';
 import { useEffect } from 'react';
 
 const sketchMap = {
@@ -91,7 +92,17 @@ const sketchMap = {
                         'heart2Heart': {
                             component: 'Heart2Heart',
                             displayName: 'Heart2heart'
-                          }
+                          },
+                            'testCube': {
+                                component: 'TestCube',
+                                displayName: 'Testcube',
+                                type: '3d'
+                              },
+                              'atmosphere': {
+                                  component: 'Atmosphere',
+                                  displayName: 'Atmosphere',
+                                  type: '3d'
+                                }
 };
 
 const SketchPage = () => {
@@ -165,7 +176,11 @@ const SketchPage = () => {
         {sketch.displayName}
       </h1> */}
       <div className="w-full max-w-3xl mx-auto items-center justify-center aspect-[9/16]">
-        <P5Wrapper sketch={sketch.component} />
+        {sketch.type === '3d' ? (
+          <Sketch3DWrapper sketch={sketch.component} />
+        ) : (
+          <P5Wrapper sketch={sketch.component} />
+        )}
       </div>
       {/* Add the native test button using dangerouslySetInnerHTML */}
       <div

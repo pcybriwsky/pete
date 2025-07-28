@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import P5Wrapper from './SketchComponent';
+import Sketch3DWrapper from './Sketch3DComponent';
 
 const sketches = [
   {
@@ -15,6 +16,13 @@ const sketches = [
     description: 'Dynamic heart patterns',
     instructions: 'Click anywhere to save the current pattern'
   },
+  {
+      name: 'Atmosphere',
+      component: 'atmosphere',
+      description: 'A new creative 3D sketch.',
+      instructions: 'Interact with the 3D sketch.',
+      type: '3d'
+    }
 ];
 
 const SketchCarousel = () => {
@@ -73,17 +81,28 @@ const SketchCarousel = () => {
             }}
             className="absolute w-full h-full"
           >
-            {/* Centered Sketch Container */}
-            <div className="relative w-full h-full">
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                <P5Wrapper sketch={sketches[currentIndex].component} />
-              </div>
+                          {/* Centered Sketch Container */}
+              <div className="relative w-full h-full">
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                  {sketches[currentIndex].type === '3d' ? (
+                    <Sketch3DWrapper sketch={sketches[currentIndex].component} />
+                  ) : (
+                    <P5Wrapper sketch={sketches[currentIndex].component} />
+                  )}
+                </div>
               
               {/* Info Panel - Overlaid at bottom */}
               <div className="absolute bottom-0 w-full p-4 bg-white/90 rounded-t-lg">
-                <h2 className="text-xl font-serif font-bold italic text-primary">
-                  {sketches[currentIndex].name}
-                </h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-serif font-bold italic text-primary">
+                    {sketches[currentIndex].name}
+                  </h2>
+                  {sketches[currentIndex].type === '3d' && (
+                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                      3D
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-text mt-1">
                   {sketches[currentIndex].instructions}
                 </p>

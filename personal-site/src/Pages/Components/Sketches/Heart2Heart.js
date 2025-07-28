@@ -1,7 +1,8 @@
-// Heart2Heart.js — Full Body + Hand Tracking version
+// Heart2Heart.js — Full Body + Hand Tracking version + BodyPix toggle
 import { Hands } from '@mediapipe/hands';
 import { Pose } from '@mediapipe/pose';
 import { Camera } from '@mediapipe/camera_utils';
+import * as bodyPix from '@tensorflow-models/body-pix';
 import p5 from 'p5';
 
 const Heart2Heart = (p) => {
@@ -11,6 +12,11 @@ const Heart2Heart = (p) => {
   let video;
   let handResults = [];
   let poseResults = null;
+
+  let useTensorFlow = false; // Set to true to use BodyPix instead of MediaPipe pose
+  let bodypixModel;
+  let bodypixResult;
+  let bodyPixCanvas;
 
   let mode = 'debug';
   let videoMode = 'small'; // 'small' or 'full'
@@ -43,82 +49,20 @@ const Heart2Heart = (p) => {
     colors = palettes[paletteKeys[currentPaletteIndex]];
   };
 
-  const setupMediaPipe = async () => {
-    try {
-      // Setup Hands
-      hands = new Hands({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-      });
-
-      hands.setOptions({
-        maxNumHands: 4,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-      });
-
-      hands.onResults((results) => {
-        handResults = results.multiHandLandmarks || [];
-        console.log('Hand landmarks:', handResults);
-      });
-
-      // Setup Pose
-      pose = new Pose({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
-      });
-
-      pose.setOptions({
-        modelComplexity: 1,
-        smoothLandmarks: true,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-      });
-
-      pose.onResults((results) => {
-        poseResults = results.poseLandmarks;
-        console.log('Pose landmarks:', poseResults);
-      });
-
-      // Setup Camera
-      camera = new Camera(video.elt, {
-        onFrame: async () => {
-          if (trackingMode === 'hands' || trackingMode === 'both') {
-            await hands.send({ image: video.elt });
-          }
-          if (trackingMode === 'body' || trackingMode === 'both') {
-            await pose.send({ image: video.elt });
-          }
-        },
-        width: 640,
-        height: 480,
-      });
-
-      await camera.start();
-      console.log('MediaPipe camera started');
-    } catch (err) {
-      console.error('MediaPipe setup failed:', err);
-    }
-  };
-
   const drawPoseLandmarks = () => {
     if (!poseResults) return;
 
-    // Define pose connections (key body parts)
     const poseConnections = [
-      [11, 12], // shoulders
-      [11, 13], [13, 15], // left arm
-      [12, 14], [14, 16], // right arm
-      [11, 23], [12, 24], // torso
-      [23, 24], // hips
-      [23, 25], [25, 27], [27, 29], [29, 31], // left leg
-      [24, 26], [26, 28], [28, 30], [30, 32], // right leg
+      [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
+      [11, 23], [12, 24], [23, 24],
+      [23, 25], [25, 27], [27, 29], [29, 31],
+      [24, 26], [26, 28], [28, 30], [30, 32],
     ];
 
     const bodyColor = colors[0];
     const wristZ = poseResults[0]?.z || 0;
     const depthScale = p.map(wristZ, -0.5, 0.5, 2.5, 0.3, true);
 
-    // Draw pose landmarks
     for (let i = 0; i < poseResults.length; i++) {
       const pt = poseResults[i];
       if (pt.visibility > 0.5) {
@@ -126,11 +70,10 @@ const Heart2Heart = (p) => {
         const y = pt.y * p.height;
         p.fill(bodyColor);
         p.noStroke();
-        p.circle(x, y, circleSize/3 * depthScale);
+        p.circle(x, y, circleSize / 3 * depthScale);
       }
     }
 
-    // Draw connections
     if (mode === 'debug') {
       p.stroke(bodyColor);
       p.strokeWeight(3);
@@ -147,7 +90,6 @@ const Heart2Heart = (p) => {
       }
     }
 
-    // Flow mode: draw flowing connections between body parts
     if (mode === 'flow') {
       for (let connection of poseConnections) {
         const pt1 = poseResults[connection[0]];
@@ -188,14 +130,168 @@ const Heart2Heart = (p) => {
     }
   };
 
+  const setupBodyPix = async () => {
+    try {
+      bodypixModel = await bodyPix.load();
+      console.log('BodyPix loaded');
+    } catch (err) {
+      console.error('BodyPix failed:', err);
+    }
+  };
+
+  const getBodyPixData = async () => {
+    if (!bodypixModel || !video) return;
+    try {
+      // Create a temporary canvas to get the correct video dimensions
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      // Set canvas size to match video display size
+      if (videoMode === 'full') {
+        tempCanvas.width = p.width;
+        tempCanvas.height = p.height;
+        tempCtx.drawImage(video.elt, 0, 0, p.width, p.height);
+      } else {
+        tempCanvas.width = 320;
+        tempCanvas.height = 240;
+        tempCtx.drawImage(video.elt, 0, 0, 320, 240);
+      }
+      
+      bodypixResult = await bodypixModel.segmentPerson(tempCanvas, {
+        flipHorizontal: false, // We're already flipping in p5
+        internalResolution: 'medium',
+        segmentationThreshold: 0.7
+      });
+    } catch (err) {
+      console.error('BodyPix segmentation failed:', err);
+    }
+  };
+
+  const drawBodyPixPoints = () => {
+    if (!bodypixResult || !bodypixResult.data) return;
+    
+    // Create a more efficient body outline visualization
+    const mask = bodypixResult.data;
+    const bodyColor = p.color(colors[0]);
+    bodyColor.setAlpha(150);
+    
+    p.noStroke();
+    p.fill(bodyColor);
+    
+    // Get video dimensions for proper scaling
+    const videoWidth = videoMode === 'full' ? p.width : 320;
+    const videoHeight = videoMode === 'full' ? p.height : 240;
+    
+    // Draw body outline as connected points
+    const points = [];
+    const step = 4; // Sample every 4th pixel for better detail
+    
+    for (let y = 0; y < videoHeight; y += step) {
+      for (let x = 0; x < videoWidth; x += step) {
+        const i = x + y * videoWidth;
+        if (mask[i] === 1) {
+          // Scale coordinates to match canvas
+          const scaledX = videoMode === 'full' ? x : x * (p.width / 320);
+          const scaledY = videoMode === 'full' ? y : y * (p.height / 240);
+          points.push({ x: scaledX, y: scaledY });
+        }
+      }
+    }
+    
+    // Draw body outline
+    if (points.length > 0) {
+      // Draw key body points
+      for (let i = 0; i < points.length; i += 2) { // Sample every 2nd point for better coverage
+        const pt = points[i];
+        p.circle(pt.x, pt.y, 3);
+      }
+      
+      // Draw flowing connections in flow mode
+      if (mode === 'flow' && points.length > 10) {
+        for (let i = 0; i < points.length - 1; i += 4) {
+          const pt1 = points[i];
+          const pt2 = points[i + 1];
+          if (pt1 && pt2) {
+            const dist = p.dist(pt1.x, pt1.y, pt2.x, pt2.y);
+            if (dist < 30) { // Only connect nearby points
+              const colIndex = (i / 4) % colors.length;
+              const col = p.color(colors[colIndex]);
+              col.setAlpha(120);
+              p.stroke(col);
+              p.strokeWeight(1.5);
+              p.line(pt1.x, pt1.y, pt2.x, pt2.y);
+            }
+          }
+        }
+      }
+    }
+  };
+
+  const setupMediaPipe = async () => {
+    try {
+      hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+      });
+
+      hands.setOptions({
+        maxNumHands: 4,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
+
+      hands.onResults((results) => {
+        handResults = results.multiHandLandmarks || [];
+        console.log('Hand landmarks:', handResults);
+      });
+
+      pose = new Pose({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+      });
+
+      pose.setOptions({
+        modelComplexity: 1,
+        smoothLandmarks: true,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
+
+      pose.onResults((results) => {
+        poseResults = results.poseLandmarks;
+        console.log('Pose landmarks:', poseResults);
+      });
+
+      camera = new Camera(video.elt, {
+        onFrame: async () => {
+          if (trackingMode === 'hands' || trackingMode === 'both') {
+            await hands.send({ image: video.elt });
+          }
+          if (trackingMode === 'body' || trackingMode === 'both') {
+            await pose.send({ image: video.elt });
+          }
+        },
+        width: 640,
+        height: 480,
+      });
+
+      await camera.start();
+      console.log('MediaPipe camera started');
+    } catch (err) {
+      console.error('MediaPipe setup failed:', err);
+    }
+  };
+
   p.setup = () => {
     p.createCanvas(p.windowWidth, p.windowHeight);
     video = p.createCapture(p.VIDEO);
     video.size(640, 480);
     video.hide();
-    setupMediaPipe();
 
-    // Top banner menu
+    // Always setup MediaPipe for hands, TensorFlow is just for body
+    setupMediaPipe();
+    if (useTensorFlow) setupBodyPix();
+
+    // Top menu UI
     const banner = p.createDiv('');
     banner.position(0, 0);
     banner.style('width', '100%');
@@ -207,7 +303,6 @@ const Heart2Heart = (p) => {
     banner.style('font-family', 'Roboto, sans-serif');
     banner.style('font-size', '16px');
 
-    // Mode select
     let modeSelect = p.createSelect();
     modeSelect.parent(banner);
     modeSelect.option('Debug', 'debug');
@@ -218,7 +313,6 @@ const Heart2Heart = (p) => {
     modeSelect.style('border-radius', '20px');
     modeSelect.style('border', '1px solid #ccc');
 
-    // Tracking mode select
     let trackingSelect = p.createSelect();
     trackingSelect.parent(banner);
     trackingSelect.option('Hands Only', 'hands');
@@ -230,7 +324,6 @@ const Heart2Heart = (p) => {
     trackingSelect.style('border-radius', '20px');
     trackingSelect.style('border', '1px solid #ccc');
 
-    // Video toggle
     let videoToggle = p.createSelect();
     videoToggle.parent(banner);
     videoToggle.option('Top-Left Video', 'small');
@@ -241,7 +334,6 @@ const Heart2Heart = (p) => {
     videoToggle.style('border-radius', '20px');
     videoToggle.style('border', '1px solid #ccc');
 
-    // Palette select
     let paletteSelect = p.createSelect();
     paletteSelect.parent(banner);
     paletteKeys.forEach(key => paletteSelect.option(key));
@@ -253,10 +345,32 @@ const Heart2Heart = (p) => {
     paletteSelect.style('padding', '5px 10px');
     paletteSelect.style('border-radius', '20px');
     paletteSelect.style('border', '1px solid #ccc');
+
+    // TensorFlow toggle
+    let tensorFlowToggle = p.createSelect();
+    tensorFlowToggle.parent(banner);
+    tensorFlowToggle.option('MediaPipe Body', 'mediapipe');
+    tensorFlowToggle.option('TensorFlow Body', 'tensorflow');
+    tensorFlowToggle.selected(useTensorFlow ? 'tensorflow' : 'mediapipe');
+    tensorFlowToggle.changed(() => {
+      useTensorFlow = tensorFlowToggle.value() === 'tensorflow';
+      if (useTensorFlow) {
+        setupBodyPix();
+      }
+      // MediaPipe is always running for hands
+    });
+    tensorFlowToggle.style('padding', '5px 10px');
+    tensorFlowToggle.style('border-radius', '20px');
+    tensorFlowToggle.style('border', '1px solid #ccc');
+  };
+
+  p.keyPressed = () => {
+    if (p.key === 'r') {
+      cyclePalette();
+    }
   };
 
   p.draw = () => {
-    // Background first
     if (mode === 'flow') {
       p.push();
       const lightOffWhite = p.color(255, 252, 247);
@@ -272,21 +386,22 @@ const Heart2Heart = (p) => {
       p.background(10);
     }
 
-    // Apply mirror transformation
     p.push();
     p.scale(-1, 1);
     p.translate(-p.width, 0);
-
-    // Video display (mirrored)
     if (videoMode === 'full') {
       p.image(video, 0, 0, p.width, p.height);
     } else {
       p.image(video, 0, 0, 320, 240);
     }
 
-    // Draw pose landmarks if tracking body
     if (trackingMode === 'body' || trackingMode === 'both') {
-      drawPoseLandmarks();
+      if (useTensorFlow) {
+        if (p.frameCount % 2 === 0) getBodyPixData(); // Reduced frequency for performance
+        drawBodyPixPoints();
+      } else {
+        drawPoseLandmarks();
+      }
     }
 
     // Draw hand landmarks/outlines
@@ -390,20 +505,8 @@ const Heart2Heart = (p) => {
       }
     }
 
-    time += 0.1;
-    
-    // End mirror transformation
     p.pop();
-  };
-
-  p.windowResized = () => {
-    p.resizeCanvas(p.windowWidth, p.windowHeight);
-  };
-
-  p.keyPressed = () => {
-    if (p.key === 'r') {
-      cyclePalette();
-    }
+    time += 0.1;
   };
 };
 

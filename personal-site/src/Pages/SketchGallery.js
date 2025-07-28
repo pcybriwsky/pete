@@ -133,7 +133,21 @@ const sketches = [
                               title: 'Heart2heart',
                               description: 'A new creative sketch description.',
                               instructions: 'Instructions for the new sketch.'
-                            }
+                            },
+                              {
+                                  id: 'testCube',
+                                  title: 'Testcube',
+                                  description: 'A new creative 3D sketch description.',
+                                  instructions: 'Instructions for the new 3D sketch.',
+                                  type: '3d'
+                                },
+                                {
+                                    id: 'atmosphere',
+                                    title: 'Atmosphere',
+                                    description: 'An atmospheric 3D environment with floating particles and rings.',
+                                    instructions: 'Click to interact. Use debug mode to change palettes.',
+                                    type: '3d'
+                                  }
 ];
 
 const SketchGallery = () => {
@@ -148,7 +162,14 @@ const SketchGallery = () => {
             className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
           >
             <div className="p-6">
-              <h2 className="text-xl font-serif italic text-primary mb-2">{sketch.title}</h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-serif italic text-primary">{sketch.title}</h2>
+                {sketch.type === '3d' && (
+                  <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                    3D
+                  </span>
+                )}
+              </div>
               <p className="text-text text-sm">{sketch.description}</p>
             </div>
           </Link>
