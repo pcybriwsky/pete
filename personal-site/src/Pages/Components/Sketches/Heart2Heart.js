@@ -362,6 +362,67 @@ const Heart2Heart = (p) => {
     }
   };
 
+  const updateBodyBlob = async () => {
+    if (!bodySegmenter || !video) {
+      console.log('Body segmenter or video not ready');
+      return;
+    }
+    
+    try {
+      console.log('Starting body blob update...');
+      
+      const segmentationConfig = {
+        multiSegmentation: false,
+        segmentBodyParts: false // Don't segment body parts, just get the whole body
+      };
+      
+      const segmentation = await bodySegmenter.segmentPeople(video.elt, segmentationConfig);
+      console.log('Segmentation result:', segmentation);
+      
+      if (segmentation && segmentation.length > 0) {
+        console.log('Segmentation detected, creating blob...');
+        
+        // Create a custom color mapping that fills the entire body with one color
+        const blobColorMapping = (maskValue) => {
+          // If it's a person (maskValue > 0), use bright red for testing
+          if (maskValue > 0) {
+            return { r: 255, g: 0, b: 0, a: 255 }; // Bright red
+          } else {
+            return { r: 0, g: 0, b: 0, a: 0 }; // Transparent background
+          }
+        };
+        
+        // Create colored mask with single color for entire body
+        console.log('Creating colored mask with blob color mapping...');
+        const coloredPartImage = await bodySegmentation.toColoredMask(
+          segmentation,
+          blobColorMapping,
+          { r: 0, g: 0, b: 0, a: 0 }
+        );
+        console.log('Colored part image created:', coloredPartImage);
+        
+        const opacity = 0.8;
+        const flipHorizontal = true;
+        const maskBlurAmount = 0;
+        const inputCanvas = video.elt;
+        const outputCanvas = maskGraphics.elt;
+        
+        // Draw the blob mask on top of the original video
+        bodySegmentation.drawMask(outputCanvas, inputCanvas, coloredPartImage, opacity, maskBlurAmount, flipHorizontal);
+        
+        console.log('Body blob created successfully');
+      } else {
+        console.log('No segmentation detected');
+        // Clear the mask graphics
+        maskGraphics.clear();
+      }
+      
+    } catch (err) {
+      console.error('Body blob failed:', err);
+      maskGraphics.clear();
+    }
+  };
+
   const setupMediaPipe = async () => {
     try {
       hands = new Hands({
@@ -449,6 +510,7 @@ const Heart2Heart = (p) => {
     modeSelect.option('Flow', 'flow');
     modeSelect.option('Blur', 'blur');
     modeSelect.option('Mask', 'mask');
+    modeSelect.option('Blob', 'blob');
     modeSelect.selected(mode);
     modeSelect.changed(() => { 
       mode = modeSelect.value(); 
@@ -529,7 +591,7 @@ const Heart2Heart = (p) => {
       cyclePalette();
     }
     if (p.key === 'm') {
-      // Cycle through modes: debug -> flow -> blur -> mask -> debug
+      // Cycle through modes: debug -> flow -> blur -> mask -> blob -> debug
       if (mode === 'debug') {
         mode = 'flow';
         blurMode = false;
@@ -540,9 +602,15 @@ const Heart2Heart = (p) => {
         mode = 'mask';
         blurMode = false;
       } else if (mode === 'mask') {
+        mode = 'blob';
+        blurMode = false;
+      } else if (mode === 'blob') {
         mode = 'debug';
         blurMode = false;
       }
+      // Reset update timers when switching modes to ensure immediate update
+      lastBlurUpdate = 0;
+      lastMaskUpdate = 0;
     }
   };
 
@@ -561,6 +629,8 @@ const Heart2Heart = (p) => {
     } else if (mode === 'blur') {
       p.background(0);
     } else if (mode === 'mask') {
+      p.background(0);
+    } else if (mode === 'blob') {
       p.background(0);
     } else {
       p.background(10);
@@ -597,6 +667,16 @@ const Heart2Heart = (p) => {
       }
       
       // Draw the mask graphics buffer (which contains video + mask overlay)
+      p.image(maskGraphics, 0, 0, p.width, p.height);
+    } else if (mode === 'blob') {
+      // Update body blob periodically
+      const currentTime = p.millis();
+      if (currentTime - lastMaskUpdate > maskUpdateInterval) {
+        updateBodyBlob();
+        lastMaskUpdate = currentTime;
+      }
+      
+      // Draw the blob graphics buffer (which contains video + blob overlay)
       p.image(maskGraphics, 0, 0, p.width, p.height);
     } else {
       // Normal video display
