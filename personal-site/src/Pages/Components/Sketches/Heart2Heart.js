@@ -3,6 +3,8 @@ import { Hands } from '@mediapipe/hands';
 import { Pose } from '@mediapipe/pose';
 import { Camera } from '@mediapipe/camera_utils';
 import * as bodyPix from '@tensorflow-models/body-pix';
+import * as bodySegmentation from '@tensorflow-models/body-segmentation';
+
 import p5 from 'p5';
 
 const Heart2Heart = (p) => {
@@ -17,8 +19,22 @@ const Heart2Heart = (p) => {
   let bodypixModel;
   let bodypixResult;
   let bodyPixCanvas;
+  
+  // Body segmentation for blur effects
+  let bodySegmenter;
+  let blurCanvas;
+  let blurMode = false;
+  let blurImage = null;
+  let lastBlurUpdate = 0;
+  let blurUpdateInterval = 50; // Update blur every 50ms for better responsiveness
+  
+  // Body part mask variables
+  let maskImage = null;
+  let lastMaskUpdate = 0;
+  let maskUpdateInterval = 50; // Update mask every 50ms for better responsiveness
+  let maskGraphics = null; // Separate graphics buffer for mask
 
-  let mode = 'debug';
+  let mode = 'mask';
   let videoMode = 'small'; // 'small' or 'full'
   let trackingMode = 'hands'; // 'hands', 'body', 'both'
   let thickness = 4;
@@ -139,6 +155,33 @@ const Heart2Heart = (p) => {
     }
   };
 
+  const setupBodySegmentation = async () => {
+    try {
+      console.log('Setting up body segmentation...');
+      
+      // Check if bodySegmentation is available globally
+      if (typeof bodySegmentation === 'undefined') {
+        console.error('Body segmentation library not loaded');
+        return;
+      }
+      
+      console.log('Body segmentation library found:', bodySegmentation);
+      
+      const model = bodySegmentation.SupportedModels.BodyPix;
+      const segmenterConfig = {
+        architecture: 'ResNet50',
+        outputStride: 32,
+        quantBytes: 2
+      };
+      
+      console.log('Creating segmenter with config:', segmenterConfig);
+      bodySegmenter = await bodySegmentation.createSegmenter(model, segmenterConfig);
+      console.log('Body segmentation model loaded successfully:', bodySegmenter);
+    } catch (err) {
+      console.error('Body segmentation setup failed:', err);
+    }
+  };
+
   const getBodyPixData = async () => {
     if (!bodypixModel || !video) return;
     try {
@@ -227,6 +270,98 @@ const Heart2Heart = (p) => {
     }
   };
 
+  const updateBlurEffect = async () => {
+    if (!bodySegmenter || !video) return;
+    
+    try {
+      const segmentationConfig = {
+        multiSegmentation: false,
+        segmentBodyParts: true
+      };
+      
+      const segmentation = await bodySegmenter.segmentPeople(video.elt, segmentationConfig);
+      
+      if (segmentation.length > 0) {
+        const foregroundThreshold = 0.5;
+        const backgroundBlurAmount = 6;
+        const edgeBlurAmount = 3;
+        const flipHorizontal = false;
+        const faceBodyPartIdsToBlur = [0, 1]; // left and right faces
+        
+        // Create output canvas for blur effect with proper scaling
+        const targetWidth = videoMode === 'full' ? p.width : 320;
+        const targetHeight = videoMode === 'full' ? p.height : 240;
+        
+        if (!blurCanvas || blurCanvas.width !== targetWidth || blurCanvas.height !== targetHeight) {
+          blurCanvas = document.createElement('canvas');
+          blurCanvas.width = targetWidth;
+          blurCanvas.height = targetHeight;
+        }
+        
+        bodySegmentation.blurBodyPart(
+          blurCanvas, video.elt, segmentation, faceBodyPartIdsToBlur, foregroundThreshold,
+          backgroundBlurAmount, edgeBlurAmount, flipHorizontal
+        );
+        
+        // Create p5 image from the blurred canvas with proper scaling
+        blurImage = p.createImage(targetWidth, targetHeight);
+        blurImage.drawingContext.drawImage(blurCanvas, 0, 0);
+      }
+    } catch (err) {
+      console.error('Blur effect failed:', err);
+      blurImage = null;
+    }
+  };
+
+  const updateBodyPartMask = async () => {
+    if (!bodySegmenter || !video) {
+      console.log('Body segmenter or video not ready');
+      return;
+    }
+    
+    try {
+      console.log('Starting body part mask update...');
+      
+      const segmentationConfig = {
+        multiSegmentation: false,
+        segmentBodyParts: true
+      };
+      
+      const segmentation = await bodySegmenter.segmentPeople(video.elt, segmentationConfig);
+      console.log('Segmentation result:', segmentation);
+      
+      if (segmentation && segmentation.length > 0) {
+        console.log('Segmentation detected, creating mask...');
+        
+        // Use rainbow colors like the reference code
+        const coloredPartImage = await bodySegmentation.toColoredMask(
+          segmentation,
+          bodySegmentation.bodyPixMaskValueToRainbowColor,
+          { r: 255, g: 255, b: 255, a: 255 }
+        );
+        
+        const opacity = 0.7;
+        const flipHorizontal = true; // Like the reference code
+        const maskBlurAmount = 0;
+        const inputCanvas = video.elt;
+        const outputCanvas = maskGraphics.elt;
+        
+        // Draw the mask image on top of the original video onto the mask graphics buffer
+        bodySegmentation.drawMask(outputCanvas, inputCanvas, coloredPartImage, opacity, maskBlurAmount, flipHorizontal);
+        
+        console.log('Body part mask created successfully');
+      } else {
+        console.log('No segmentation detected');
+        // Clear the mask graphics
+        maskGraphics.clear();
+      }
+      
+    } catch (err) {
+      console.error('Body part mask failed:', err);
+      maskGraphics.clear();
+    }
+  };
+
   const setupMediaPipe = async () => {
     try {
       hands = new Hands({
@@ -287,9 +422,14 @@ const Heart2Heart = (p) => {
     video.size(640, 480);
     video.hide();
 
+    // Create mask graphics buffer
+    maskGraphics = p.createGraphics(p.width, p.height);
+
     // Always setup MediaPipe for hands, TensorFlow is just for body
     setupMediaPipe();
     if (useTensorFlow) setupBodyPix();
+    // Setup body segmentation for blur effects
+    setupBodySegmentation();
 
     // Top menu UI
     const banner = p.createDiv('');
@@ -307,8 +447,13 @@ const Heart2Heart = (p) => {
     modeSelect.parent(banner);
     modeSelect.option('Debug', 'debug');
     modeSelect.option('Flow', 'flow');
+    modeSelect.option('Blur', 'blur');
+    modeSelect.option('Mask', 'mask');
     modeSelect.selected(mode);
-    modeSelect.changed(() => { mode = modeSelect.value(); });
+    modeSelect.changed(() => { 
+      mode = modeSelect.value(); 
+      blurMode = mode === 'blur';
+    });
     modeSelect.style('padding', '5px 10px');
     modeSelect.style('border-radius', '20px');
     modeSelect.style('border', '1px solid #ccc');
@@ -362,11 +507,42 @@ const Heart2Heart = (p) => {
     tensorFlowToggle.style('padding', '5px 10px');
     tensorFlowToggle.style('border-radius', '20px');
     tensorFlowToggle.style('border', '1px solid #ccc');
+
+    // Add instructions
+    let instructions = p.createDiv('Press "r" for palette, "m" for mode');
+    instructions.parent(banner);
+    instructions.style('font-size', '12px');
+    instructions.style('color', '#666');
+    instructions.style('padding', '5px 10px');
+
+    // Add body part legend for mask mode
+    let legend = p.createDiv('Mask: Face=1st, Arms=2nd, Torso=3rd, Legs=4th color');
+    legend.parent(banner);
+    legend.style('font-size', '10px');
+    legend.style('color', '#888');
+    legend.style('padding', '2px 10px');
+    legend.style('text-align', 'center');
   };
 
   p.keyPressed = () => {
     if (p.key === 'r') {
       cyclePalette();
+    }
+    if (p.key === 'm') {
+      // Cycle through modes: debug -> flow -> blur -> mask -> debug
+      if (mode === 'debug') {
+        mode = 'flow';
+        blurMode = false;
+      } else if (mode === 'flow') {
+        mode = 'blur';
+        blurMode = true;
+      } else if (mode === 'blur') {
+        mode = 'mask';
+        blurMode = false;
+      } else if (mode === 'mask') {
+        mode = 'debug';
+        blurMode = false;
+      }
     }
   };
 
@@ -382,6 +558,10 @@ const Heart2Heart = (p) => {
       p.noStroke();
       p.rect(0, 0, p.width, p.height);
       p.pop();
+    } else if (mode === 'blur') {
+      p.background(0);
+    } else if (mode === 'mask') {
+      p.background(0);
     } else {
       p.background(10);
     }
@@ -389,10 +569,42 @@ const Heart2Heart = (p) => {
     p.push();
     p.scale(-1, 1);
     p.translate(-p.width, 0);
-    if (videoMode === 'full') {
-      p.image(video, 0, 0, p.width, p.height);
+    
+    if (mode === 'blur') {
+      // Update blur effect periodically
+      const currentTime = p.millis();
+      if (currentTime - lastBlurUpdate > blurUpdateInterval) {
+        updateBlurEffect();
+        lastBlurUpdate = currentTime;
+      }
+      
+      // Draw the blurred image if available, otherwise show normal video
+      if (blurImage) {
+        p.image(blurImage, 0, 0, videoMode === 'full' ? p.width : 320, videoMode === 'full' ? p.height : 240);
+      } else {
+        if (videoMode === 'full') {
+          p.image(video, 0, 0, p.width, p.height);
+        } else {
+          p.image(video, 0, 0, 320, 240);
+        }
+      }
+    } else if (mode === 'mask') {
+      // Update body part mask periodically
+      const currentTime = p.millis();
+      if (currentTime - lastMaskUpdate > maskUpdateInterval) {
+        updateBodyPartMask();
+        lastMaskUpdate = currentTime;
+      }
+      
+      // Draw the mask graphics buffer (which contains video + mask overlay)
+      p.image(maskGraphics, 0, 0, p.width, p.height);
     } else {
-      p.image(video, 0, 0, 320, 240);
+      // Normal video display
+      if (videoMode === 'full') {
+        p.image(video, 0, 0, p.width, p.height);
+      } else {
+        p.image(video, 0, 0, 320, 240);
+      }
     }
 
     if (trackingMode === 'body' || trackingMode === 'both') {
