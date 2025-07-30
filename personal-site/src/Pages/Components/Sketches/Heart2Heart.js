@@ -47,6 +47,7 @@ const Heart2Heart = (p) => {
   let blobTimeSpeed = 0.2;
   let blobTint = null; // No tint by default (null = RGB mixing)
   let blobSmoothing = 3; // Smoothing iterations
+
   let blobBaseSize = 0.8; // Base size multiplier
   let blobRedSize = 1.0; // Red ring size multiplier
   let blobGreenSize = 1.0; // Green ring size multiplier
@@ -286,7 +287,7 @@ const Heart2Heart = (p) => {
         
         // Apply smoothing to the contour
         const smoothedContour = smoothContour(simplifiedContour, blobSmoothing); // Use slider value
-        console.log('Smoothed contour has', smoothedContour.length, 'points');
+        console.log('Final smoothed contour has', smoothedContour.length, 'points');
         
         console.log('Scaling contour...');
         // Scale contour to canvas coordinates
@@ -678,29 +679,7 @@ const Heart2Heart = (p) => {
     return smoothed;
   };
 
-  // Alternative: B-spline smoothing (very smooth)
-  const bsplineSmooth = (contour, degree = 3) => {
-    if (contour.length < degree + 1) return contour;
-    
-    const smoothed = [];
-    const n = contour.length;
-    
-    for (let i = 0; i < n; i++) {
-      let x = 0, y = 0, weight = 0;
-      
-      for (let j = 0; j <= degree; j++) {
-        const idx = (i + j) % n;
-        const w = 1; // Uniform weights
-        x += contour[idx].x * w;
-        y += contour[idx].y * w;
-        weight += w;
-      }
-      
-      smoothed.push({ x: x / weight, y: y / weight });
-    }
-    
-    return smoothed;
-  };
+
 
   // Legacy pose-based outline (keeping for fallback)
   const drawPoseOutlineGlow = () => {
@@ -1281,6 +1260,8 @@ const Heart2Heart = (p) => {
       blobSmoothing = smoothingSlider.value();
       smoothingLabel.html('Smooth: ' + blobSmoothing);
     });
+
+
 
     // Base Size slider
     let baseSizeLabel = p.createDiv('Base: ' + blobBaseSize.toFixed(1));
