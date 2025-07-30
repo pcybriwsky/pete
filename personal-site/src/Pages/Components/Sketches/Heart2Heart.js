@@ -40,6 +40,18 @@ const Heart2Heart = (p) => {
   let thickness = 4;
   let time = 0;
   let circleSize = 30;
+  
+  // Blob effect controls
+  let blobLayers = 50;
+  let blobMaxNoise = 100;
+  let blobTimeSpeed = 0.2;
+  let blobTint = null; // No tint by default (null = RGB mixing)
+  let blobSmoothing = 3; // Smoothing iterations
+  let blobBaseSize = 0.8; // Base size multiplier
+  let blobRedSize = 1.0; // Red ring size multiplier
+  let blobGreenSize = 1.0; // Green ring size multiplier
+  let blobBlueSize = 1.0; // Blue ring size multiplier
+  let blobStability = 0.3; // Outline stability factor (0.1 = very stable, 1.0 = responsive)
 
   // --- Visual Style Variables ---
   const palettes = {
@@ -149,6 +161,8 @@ const Heart2Heart = (p) => {
   // Create a stable, glowing outline using TensorFlow segmentation mask
   let lastSegmentationUpdate = 0;
   let segmentationOutline = null;
+  let smoothedOutline = null; // Store the smoothed outline
+  let outlineSmoothingFactor = 0.3; // Easing factor for outline smoothing
   
   const updateSegmentationOutline = async () => {
     console.log('Starting updateSegmentationOutline...');
@@ -180,101 +194,140 @@ const Heart2Heart = (p) => {
         return;
       }
       
-      console.log('Segmentation[0]:', segmentation[0]);
-      const mask = segmentation[0].mask;
-      console.log('Mask object:', mask);
-      console.log('Mask keys:', Object.keys(mask));
+      console.log('Found', segmentation.length, 'people');
       
-      if (!mask) {
-        console.log('No mask object');
-        segmentationOutline = null;
-        return;
-      }
+      // Process all people and combine their outlines
+      let allOutlines = [];
       
-      // Check different possible mask data structures
-      console.log('Mask.data:', mask.data);
-      console.log('Mask.width:', mask.width);
-      console.log('Mask.height:', mask.height);
-      
-      // The mask data is in mask.mask (ImageData object)
-      if (mask.mask) {
-        console.log('Found mask.mask property (ImageData)');
-        const imageData = mask.mask;
-        console.log('ImageData:', imageData);
-        console.log('ImageData width:', imageData.width);
-        console.log('ImageData height:', imageData.height);
-        console.log('ImageData data length:', imageData.data.length);
+      for (let personIndex = 0; personIndex < segmentation.length; personIndex++) {
+        const person = segmentation[personIndex];
+        console.log('Processing person', personIndex, ':', person);
+        const mask = person.mask;
+        console.log('Mask object:', mask);
+        console.log('Mask keys:', Object.keys(mask));
         
-        // Use the ImageData properties
-        mask.data = imageData.data;
-        mask.width = imageData.width;
-        mask.height = imageData.height;
-      } else {
-        console.log('No mask.mask property found');
-        segmentationOutline = null;
-        return;
-      }
-
-      console.log('Segmentation mask:', mask.width, 'x', mask.height);
-      console.log('Mask data length:', mask.data.length);
-      console.log('First few mask values:', mask.data.slice(0, 10));
-
-      // Get mask dimensions
-      const maskWidth = mask.width;
-      const maskHeight = mask.height;
-      const maskData = mask.data;
-      
-      // Scale mask to canvas size
-      const scaleX = p.width / maskWidth;
-      const scaleY = p.height / maskHeight;
-      
-      console.log('Creating binary grid...');
-      // Create binary grid from mask data (ImageData has RGBA values)
-      const binaryGrid = [];
-      let whitePixels = 0;
-      for (let y = 0; y < maskHeight; y++) {
-        binaryGrid[y] = [];
-        for (let x = 0; x < maskWidth; x++) {
-          const index = (y * maskWidth + x) * 4; // RGBA = 4 bytes per pixel
-          const alpha = maskData[index + 3]; // Alpha channel (transparency)
-          const isWhite = alpha > 128;
-          binaryGrid[y][x] = isWhite ? 1 : 0;
-          if (isWhite) whitePixels++;
+        if (!mask) {
+          console.log('No mask object for person', personIndex);
+          continue;
         }
+        
+        // Check different possible mask data structures
+        console.log('Mask.data:', mask.data);
+        console.log('Mask.width:', mask.width);
+        console.log('Mask.height:', mask.height);
+        
+        // The mask data is in mask.mask (ImageData object)
+        if (mask.mask) {
+          console.log('Found mask.mask property (ImageData)');
+          const imageData = mask.mask;
+          console.log('ImageData:', imageData);
+          console.log('ImageData width:', imageData.width);
+          console.log('ImageData height:', imageData.height);
+          console.log('ImageData data length:', imageData.data.length);
+          
+          // Use the ImageData properties
+          mask.data = imageData.data;
+          mask.width = imageData.width;
+          mask.height = imageData.height;
+        } else {
+          console.log('No mask.mask property found for person', personIndex);
+          continue;
+        }
+
+        console.log('Segmentation mask:', mask.width, 'x', mask.height);
+        console.log('Mask data length:', mask.data.length);
+        console.log('First few mask values:', mask.data.slice(0, 10));
+
+        // Get mask dimensions
+        const maskWidth = mask.width;
+        const maskHeight = mask.height;
+        const maskData = mask.data;
+        
+        // Scale mask to canvas size
+        const scaleX = p.width / maskWidth;
+        const scaleY = p.height / maskHeight;
+        
+        console.log('Creating binary grid for person', personIndex);
+        // Create binary grid from mask data (ImageData has RGBA values)
+        const binaryGrid = [];
+        let whitePixels = 0;
+        for (let y = 0; y < maskHeight; y++) {
+          binaryGrid[y] = [];
+          for (let x = 0; x < maskWidth; x++) {
+            const index = (y * maskWidth + x) * 4; // RGBA = 4 bytes per pixel
+            const alpha = maskData[index + 3]; // Alpha channel (transparency)
+            const isWhite = alpha > 100; // Lower threshold for tighter contour
+            binaryGrid[y][x] = isWhite ? 1 : 0;
+            if (isWhite) whitePixels++;
+          }
+        }
+        console.log('Binary grid created with', whitePixels, 'white pixels out of', maskWidth * maskHeight, 'total pixels');
+        
+        console.log('Applying morphological closing...');
+        // Apply morphological closing (dilation + erosion) to close gaps
+        const closedGrid = morphologicalClosing(binaryGrid, 2); // Smaller kernel for tighter contour
+        
+        console.log('Extracting outer contour...');
+        // Extract outer contour
+        const contour = extractOuterContour(closedGrid);
+        
+        console.log('Contour extracted with', contour.length, 'points');
+        console.log('First few contour points:', contour.slice(0, 5));
+        
+        if (contour.length < 3) {
+          console.log('Contour too short for person', personIndex, 'skipping');
+          continue;
+        }
+        
+        console.log('Simplifying contour...');
+        // Use very gentle simplification for tighter contour
+        const simplifiedContour = simplifyContour(contour, 0.3); // Very low tolerance for tight contour
+        console.log('Simplified contour has', simplifiedContour.length, 'points');
+        
+        // Apply smoothing to the contour
+        const smoothedContour = smoothContour(simplifiedContour, blobSmoothing); // Use slider value
+        console.log('Smoothed contour has', smoothedContour.length, 'points');
+        
+        console.log('Scaling contour...');
+        // Scale contour to canvas coordinates
+        const scaledContour = smoothedContour.map(pt => ({
+          x: pt.x * scaleX,
+          y: pt.y * scaleY
+        }));
+        
+        allOutlines.push(scaledContour);
       }
-      console.log('Binary grid created with', whitePixels, 'white pixels out of', maskWidth * maskHeight, 'total pixels');
       
-      console.log('Applying morphological closing...');
-      // Apply morphological closing (dilation + erosion) to close gaps
-      const closedGrid = morphologicalClosing(binaryGrid, 3);
-      
-      console.log('Extracting outer contour...');
-      // Extract outer contour
-      const contour = extractOuterContour(closedGrid);
-      
-      console.log('Contour extracted with', contour.length, 'points');
-      console.log('First few contour points:', contour.slice(0, 5));
-      
-      if (contour.length < 3) {
-        console.log('Contour too short, aborting');
+      if (allOutlines.length === 0) {
+        console.log('No valid outlines found');
         segmentationOutline = null;
         return;
       }
       
-      console.log('Simplifying contour...');
-      // For now, skip simplification to see the raw contour
-      const simplifiedContour = contour; // Use raw contour without simplification
-      console.log('Using raw contour with', simplifiedContour.length, 'points');
+      // Combine all outlines into one (for now - could be enhanced to handle separate blobs)
+      const combinedOutline = allOutlines.flat();
       
-      console.log('Scaling contour...');
-      // Scale contour to canvas coordinates
-      const scaledContour = simplifiedContour.map(pt => ({
-        x: pt.x * scaleX,
-        y: pt.y * scaleY
-      }));
+      // Apply temporal smoothing to reduce jitter
+      if (smoothedOutline && smoothedOutline.length === combinedOutline.length) {
+        // Smooth between old and new outline
+        const newSmoothedOutline = [];
+        for (let i = 0; i < combinedOutline.length; i++) {
+          const oldPt = smoothedOutline[i];
+          const newPt = combinedOutline[i];
+          const smoothedPt = {
+            x: oldPt.x + (newPt.x - oldPt.x) * outlineSmoothingFactor,
+            y: oldPt.y + (newPt.y - oldPt.y) * outlineSmoothingFactor
+          };
+          newSmoothedOutline.push(smoothedPt);
+        }
+        smoothedOutline = newSmoothedOutline;
+      } else {
+        // First time or different number of points, use new outline directly
+        smoothedOutline = combinedOutline;
+      }
       
-      segmentationOutline = scaledContour;
-      console.log('Outline created with', scaledContour.length, 'points');
+      segmentationOutline = smoothedOutline; // Use the smoothed version
+      console.log('Smoothed outline created with', smoothedOutline.length, 'points from', allOutlines.length, 'people');
       
     } catch (err) {
       console.error('Segmentation outline failed:', err);
@@ -320,28 +373,48 @@ const Heart2Heart = (p) => {
     centerY /= segmentationOutline.length;
     
     // Create multiple layers with different colors and noise offsets
-    const layers = 30; // Number of blob layers
-    const baseSize = 0.8; // Base size multiplier
+    const layers = blobLayers; // Use slider value
+    const baseSize = blobBaseSize; // Use slider value
     const sizeStep = (1.0 - baseSize) / layers; // Size increment per layer
-    const maxNoise = 100; // Maximum noise displacement
-    const t = time * 2; // Time for animation
+    const maxNoise = blobMaxNoise; // Use slider value
+    const t = time * blobTimeSpeed; // Use slider value
     
     for (let i = layers; i > 0; i--) {
       const alpha = Math.pow(1 - (i / layers), 2) * 0.8; // Fade out outer layers
       const size = baseSize + i * sizeStep;
       const noiseOffset = i * 0.1; // Different noise offset per layer
       
-      // Red layer
-      p.fill(255, 0, 0, alpha * 255);
-      drawNoisyBlob(segmentationOutline, centerX, centerY, size, t + noiseOffset, maxNoise);
-      
-      // Green layer
-      p.fill(0, 255, 0, alpha * 255);
-      drawNoisyBlob(segmentationOutline, centerX, centerY, size, t + noiseOffset + 0.2, maxNoise);
-      
-      // Blue layer
-      p.fill(0, 0, 255, alpha * 255);
-      drawNoisyBlob(segmentationOutline, centerX, centerY, size, t + noiseOffset + 0.4, maxNoise);
+      if (blobTint) {
+        // Use tint color for all layers with slight variations
+        const tintR = blobTint[0];
+        const tintG = blobTint[1];
+        const tintB = blobTint[2];
+        
+        // Layer 1 - base tint
+        p.fill(tintR, tintG, tintB, alpha * 255);
+        drawNoisyBlob(segmentationOutline, centerX, centerY, size, t + noiseOffset, maxNoise);
+        
+        // Layer 2 - slight variation
+        p.fill(tintR * 0.8, tintG * 0.8, tintB * 0.8, alpha * 255);
+        drawNoisyBlob(segmentationOutline, centerX, centerY, size, t + noiseOffset + 0.2, maxNoise);
+        
+        // Layer 3 - more variation
+        p.fill(tintR * 0.6, tintG * 0.6, tintB * 0.6, alpha * 255);
+        drawNoisyBlob(segmentationOutline, centerX, centerY, size, t + noiseOffset + 0.4, maxNoise);
+      } else {
+        // Original RGB mixing effect with individual size multipliers
+        // Red layer
+        p.fill(255, 0, 0, alpha * 255);
+        drawNoisyBlob(segmentationOutline, centerX, centerY, size * blobRedSize, t + noiseOffset, maxNoise);
+        
+        // Green layer
+        p.fill(0, 255, 0, alpha * 255);
+        drawNoisyBlob(segmentationOutline, centerX, centerY, size * blobGreenSize, t + noiseOffset + 0.2, maxNoise);
+        
+        // Blue layer
+        p.fill(0, 0, 255, alpha * 255);
+        drawNoisyBlob(segmentationOutline, centerX, centerY, size * blobBlueSize, t + noiseOffset + 0.4, maxNoise);
+      }
     }
     
     p.pop();
@@ -551,6 +624,84 @@ const Heart2Heart = (p) => {
     return Math.sqrt(dx * dx + dy * dy);
   };
 
+  // Smooth contour using multiple algorithms
+  const smoothContour = (contour, iterations = 3) => {
+    if (contour.length < 3) return contour;
+    
+    let smoothed = [...contour];
+    
+    for (let iter = 0; iter < iterations; iter++) {
+      const newContour = [];
+      
+      for (let i = 0; i < smoothed.length; i++) {
+        const prev = smoothed[(i - 1 + smoothed.length) % smoothed.length];
+        const curr = smoothed[i];
+        const next = smoothed[(i + 1) % smoothed.length];
+        
+        // Apply Gaussian smoothing (weighted average)
+        const weight = 0.25; // Smoothing strength
+        const newX = curr.x * (1 - 2 * weight) + prev.x * weight + next.x * weight;
+        const newY = curr.y * (1 - 2 * weight) + prev.y * weight + next.y * weight;
+        
+        newContour.push({ x: newX, y: newY });
+      }
+      
+      smoothed = newContour;
+    }
+    
+    return smoothed;
+  };
+
+  // Alternative: Chaikin smoothing (more aggressive)
+  const chaikinSmooth = (contour, iterations = 2) => {
+    if (contour.length < 3) return contour;
+    
+    let smoothed = [...contour];
+    
+    for (let iter = 0; iter < iterations; iter++) {
+      const newContour = [];
+      
+      for (let i = 0; i < smoothed.length; i++) {
+        const curr = smoothed[i];
+        const next = smoothed[(i + 1) % smoothed.length];
+        
+        // Chaikin's corner cutting algorithm
+        const q = { x: 0.75 * curr.x + 0.25 * next.x, y: 0.75 * curr.y + 0.25 * next.y };
+        const r = { x: 0.25 * curr.x + 0.75 * next.x, y: 0.25 * curr.y + 0.75 * next.y };
+        
+        newContour.push(q, r);
+      }
+      
+      smoothed = newContour;
+    }
+    
+    return smoothed;
+  };
+
+  // Alternative: B-spline smoothing (very smooth)
+  const bsplineSmooth = (contour, degree = 3) => {
+    if (contour.length < degree + 1) return contour;
+    
+    const smoothed = [];
+    const n = contour.length;
+    
+    for (let i = 0; i < n; i++) {
+      let x = 0, y = 0, weight = 0;
+      
+      for (let j = 0; j <= degree; j++) {
+        const idx = (i + j) % n;
+        const w = 1; // Uniform weights
+        x += contour[idx].x * w;
+        y += contour[idx].y * w;
+        weight += w;
+      }
+      
+      smoothed.push({ x: x / weight, y: y / weight });
+    }
+    
+    return smoothed;
+  };
+
   // Legacy pose-based outline (keeping for fallback)
   const drawPoseOutlineGlow = () => {
     if (!poseResults) return;
@@ -675,7 +826,7 @@ const Heart2Heart = (p) => {
     
     // Draw body outline as connected points
     const points = [];
-    const step = 4; // Sample every 4th pixel for better detail
+    const step = 2; // Sample every 4th pixel for better detail
     
     for (let y = 0; y < videoHeight; y += step) {
       for (let x = 0; x < videoWidth; x += step) {
@@ -1032,6 +1183,168 @@ const Heart2Heart = (p) => {
     legend.style('color', '#888');
     legend.style('padding', '2px 10px');
     legend.style('text-align', 'center');
+
+    // Create blob effect controls panel
+    const blobPanel = p.createDiv('');
+    blobPanel.position(0, 70);
+    blobPanel.style('width', '100%');
+    blobPanel.style('height', '120px');
+    blobPanel.style('background-color', 'rgba(0, 0, 0, 0.8)');
+    blobPanel.style('display', 'flex');
+    blobPanel.style('align-items', 'center');
+    blobPanel.style('justify-content', 'space-around');
+    blobPanel.style('font-family', 'Roboto, sans-serif');
+    blobPanel.style('font-size', '14px');
+    blobPanel.style('color', 'white');
+
+    // Layers slider
+    let layersLabel = p.createDiv('Layers: ' + blobLayers);
+    layersLabel.parent(blobPanel);
+    layersLabel.style('text-align', 'center');
+    
+    let layersSlider = p.createSlider(10, 100, blobLayers, 1);
+    layersSlider.parent(blobPanel);
+    layersSlider.style('width', '100px');
+    layersSlider.input(() => {
+      blobLayers = layersSlider.value();
+      layersLabel.html('Layers: ' + blobLayers);
+    });
+
+    // Max Noise slider
+    let noiseLabel = p.createDiv('Noise: ' + blobMaxNoise);
+    noiseLabel.parent(blobPanel);
+    noiseLabel.style('text-align', 'center');
+    
+    let noiseSlider = p.createSlider(10, 200, blobMaxNoise, 1);
+    noiseSlider.parent(blobPanel);
+    noiseSlider.style('width', '100px');
+    noiseSlider.input(() => {
+      blobMaxNoise = noiseSlider.value();
+      noiseLabel.html('Noise: ' + blobMaxNoise);
+    });
+
+    // Time Speed slider
+    let speedLabel = p.createDiv('Speed: ' + blobTimeSpeed.toFixed(1));
+    speedLabel.parent(blobPanel);
+    speedLabel.style('text-align', 'center');
+    
+    let speedSlider = p.createSlider(0.1, 5.0, blobTimeSpeed, 0.1);
+    speedSlider.parent(blobPanel);
+    speedSlider.style('width', '100px');
+    speedSlider.input(() => {
+      blobTimeSpeed = speedSlider.value();
+      speedLabel.html('Speed: ' + blobTimeSpeed.toFixed(1));
+    });
+
+    // Color tint selector
+    let tintLabel = p.createDiv('Tint');
+    tintLabel.parent(blobPanel);
+    tintLabel.style('text-align', 'center');
+    
+    let tintSelect = p.createSelect();
+    tintSelect.parent(blobPanel);
+    tintSelect.option('No Tint', 'none');
+    tintSelect.option('Red', 'red');
+    tintSelect.option('Green', 'green');
+    tintSelect.option('Blue', 'blue');
+    tintSelect.option('Cyan', 'cyan');
+    tintSelect.option('Magenta', 'magenta');
+    tintSelect.option('Yellow', 'yellow');
+    tintSelect.option('White', 'white');
+    tintSelect.selected('none');
+    tintSelect.changed(() => {
+      const tint = tintSelect.value();
+      switch(tint) {
+        case 'none': blobTint = null; break;
+        case 'red': blobTint = [255, 0, 0]; break;
+        case 'green': blobTint = [0, 255, 0]; break;
+        case 'blue': blobTint = [0, 0, 255]; break;
+        case 'cyan': blobTint = [0, 255, 255]; break;
+        case 'magenta': blobTint = [255, 0, 255]; break;
+        case 'yellow': blobTint = [255, 255, 0]; break;
+        case 'white': blobTint = [255, 255, 255]; break;
+      }
+    });
+    tintSelect.style('padding', '5px 10px');
+    tintSelect.style('border-radius', '20px');
+    tintSelect.style('border', '1px solid #ccc');
+
+    // Smoothing slider
+    let smoothingLabel = p.createDiv('Smooth: ' + blobSmoothing);
+    smoothingLabel.parent(blobPanel);
+    smoothingLabel.style('text-align', 'center');
+    
+    let smoothingSlider = p.createSlider(0, 8, blobSmoothing, 1);
+    smoothingSlider.parent(blobPanel);
+    smoothingSlider.style('width', '100px');
+    smoothingSlider.input(() => {
+      blobSmoothing = smoothingSlider.value();
+      smoothingLabel.html('Smooth: ' + blobSmoothing);
+    });
+
+    // Base Size slider
+    let baseSizeLabel = p.createDiv('Base: ' + blobBaseSize.toFixed(1));
+    baseSizeLabel.parent(blobPanel);
+    baseSizeLabel.style('text-align', 'center');
+    
+    let baseSizeSlider = p.createSlider(0.3, 0.95, blobBaseSize, 0.05);
+    baseSizeSlider.parent(blobPanel);
+    baseSizeSlider.style('width', '100px');
+    baseSizeSlider.input(() => {
+      blobBaseSize = baseSizeSlider.value();
+      baseSizeLabel.html('Base: ' + blobBaseSize.toFixed(1));
+    });
+
+    // Color ring size sliders
+    let redSizeLabel = p.createDiv('Red: ' + blobRedSize.toFixed(2));
+    redSizeLabel.parent(blobPanel);
+    redSizeLabel.style('text-align', 'center');
+    
+    let redSizeSlider = p.createSlider(0.9, 1.1, blobRedSize, 0.001);
+    redSizeSlider.parent(blobPanel);
+    redSizeSlider.style('width', '100px');
+    redSizeSlider.input(() => {
+      blobRedSize = redSizeSlider.value();
+      redSizeLabel.html('Red: ' + blobRedSize.toFixed(2));
+    });
+
+    let greenSizeLabel = p.createDiv('Green: ' + blobGreenSize.toFixed(2));
+    greenSizeLabel.parent(blobPanel);
+    greenSizeLabel.style('text-align', 'center');
+    
+    let greenSizeSlider = p.createSlider(0.9, 1.1, blobGreenSize, 0.001);
+    greenSizeSlider.parent(blobPanel);
+    greenSizeSlider.style('width', '100px');
+    greenSizeSlider.input(() => {
+      blobGreenSize = greenSizeSlider.value();
+      greenSizeLabel.html('Green: ' + blobGreenSize.toFixed(2));
+    });
+
+    let blueSizeLabel = p.createDiv('Blue: ' + blobBlueSize.toFixed(2));
+    blueSizeLabel.parent(blobPanel);
+    blueSizeLabel.style('text-align', 'center');
+    
+    let blueSizeSlider = p.createSlider(0.9, 1.1, blobBlueSize, 0.001);
+    blueSizeSlider.parent(blobPanel);
+    blueSizeSlider.style('width', '100px');
+          blueSizeSlider.input(() => {
+        blobBlueSize = blueSizeSlider.value();
+        blueSizeLabel.html('Blue: ' + blobBlueSize.toFixed(2));
+      });
+
+    // Stability slider
+    let stabilityLabel = p.createDiv('Stability: ' + blobStability.toFixed(1));
+    stabilityLabel.parent(blobPanel);
+    stabilityLabel.style('text-align', 'center');
+    
+    let stabilitySlider = p.createSlider(0.1, 1.0, blobStability, 0.1);
+    stabilitySlider.parent(blobPanel);
+    stabilitySlider.style('width', '100px');
+    stabilitySlider.input(() => {
+      blobStability = stabilitySlider.value();
+      outlineSmoothingFactor = blobStability; // Update the smoothing factor
+      stabilityLabel.html('Stability: ' + blobStability.toFixed(1));
+    });
   };
 
   p.keyPressed = () => {
@@ -1148,7 +1461,7 @@ const Heart2Heart = (p) => {
     console.log('Draw loop - mode:', mode, 'useTensorFlow:', useTensorFlow, 'trackingMode:', trackingMode);
     if (mode === 'blob' && useTensorFlow && trackingMode !== 'hands') {
       const currentTime = p.millis();
-      if (currentTime - lastSegmentationUpdate > 100) { // Update every 100ms
+      if (currentTime - lastSegmentationUpdate > 200) { // Update every 200ms for more stability
         console.log('Updating segmentation outline...');
         updateSegmentationOutline();
         lastSegmentationUpdate = currentTime;
