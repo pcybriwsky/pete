@@ -15,7 +15,7 @@ const Heart2Heart = (p) => {
   let handResults = [];
   let poseResults = null;
 
-  let useTensorFlow = false; // Set to true to use BodyPix instead of MediaPipe pose
+  let useTensorFlow = true; // Set to true to use BodyPix instead of MediaPipe pose
   let bodypixModel;
   let bodypixResult;
   let bodyPixCanvas;
@@ -34,9 +34,9 @@ const Heart2Heart = (p) => {
   let maskUpdateInterval = 50; // Update mask every 50ms for better responsiveness
   let maskGraphics = null; // Separate graphics buffer for mask
 
-  let mode = 'mask';
+  let mode = 'blob';
   let videoMode = 'small'; // 'small' or 'full'
-  let trackingMode = 'hands'; // 'hands', 'body', 'both'
+  let trackingMode = 'body'; // 'hands', 'body', 'both'
   let thickness = 4;
   let time = 0;
   let circleSize = 30;
@@ -144,6 +144,454 @@ const Heart2Heart = (p) => {
         }
       }
     }
+  };
+
+  // Create a stable, glowing outline using TensorFlow segmentation mask
+  let lastSegmentationUpdate = 0;
+  let segmentationOutline = null;
+  
+  const updateSegmentationOutline = async () => {
+    console.log('Starting updateSegmentationOutline...');
+    if (!bodySegmenter || !video) {
+      console.log('Missing bodySegmenter or video');
+      return;
+    }
+
+    try {
+      // Get segmentation data
+      const segmentationConfig = {
+        multiSegmentation: false,
+        segmentBodyParts: false // Just get the whole body mask
+      };
+      
+      console.log('Getting segmentation...');
+      let segmentation;
+      try {
+        segmentation = await bodySegmenter.segmentPeople(video.elt, segmentationConfig);
+        console.log('Segmentation result:', segmentation);
+      } catch (segErr) {
+        console.error('Segmentation call failed:', segErr);
+        throw segErr;
+      }
+      
+      if (segmentation.length === 0) {
+        console.log('No segmentation found');
+        segmentationOutline = null;
+        return;
+      }
+      
+      console.log('Segmentation[0]:', segmentation[0]);
+      const mask = segmentation[0].mask;
+      console.log('Mask object:', mask);
+      console.log('Mask keys:', Object.keys(mask));
+      
+      if (!mask) {
+        console.log('No mask object');
+        segmentationOutline = null;
+        return;
+      }
+      
+      // Check different possible mask data structures
+      console.log('Mask.data:', mask.data);
+      console.log('Mask.width:', mask.width);
+      console.log('Mask.height:', mask.height);
+      
+      // The mask data is in mask.mask (ImageData object)
+      if (mask.mask) {
+        console.log('Found mask.mask property (ImageData)');
+        const imageData = mask.mask;
+        console.log('ImageData:', imageData);
+        console.log('ImageData width:', imageData.width);
+        console.log('ImageData height:', imageData.height);
+        console.log('ImageData data length:', imageData.data.length);
+        
+        // Use the ImageData properties
+        mask.data = imageData.data;
+        mask.width = imageData.width;
+        mask.height = imageData.height;
+      } else {
+        console.log('No mask.mask property found');
+        segmentationOutline = null;
+        return;
+      }
+
+      console.log('Segmentation mask:', mask.width, 'x', mask.height);
+      console.log('Mask data length:', mask.data.length);
+      console.log('First few mask values:', mask.data.slice(0, 10));
+
+      // Get mask dimensions
+      const maskWidth = mask.width;
+      const maskHeight = mask.height;
+      const maskData = mask.data;
+      
+      // Scale mask to canvas size
+      const scaleX = p.width / maskWidth;
+      const scaleY = p.height / maskHeight;
+      
+      console.log('Creating binary grid...');
+      // Create binary grid from mask data (ImageData has RGBA values)
+      const binaryGrid = [];
+      let whitePixels = 0;
+      for (let y = 0; y < maskHeight; y++) {
+        binaryGrid[y] = [];
+        for (let x = 0; x < maskWidth; x++) {
+          const index = (y * maskWidth + x) * 4; // RGBA = 4 bytes per pixel
+          const alpha = maskData[index + 3]; // Alpha channel (transparency)
+          const isWhite = alpha > 128;
+          binaryGrid[y][x] = isWhite ? 1 : 0;
+          if (isWhite) whitePixels++;
+        }
+      }
+      console.log('Binary grid created with', whitePixels, 'white pixels out of', maskWidth * maskHeight, 'total pixels');
+      
+      console.log('Applying morphological closing...');
+      // Apply morphological closing (dilation + erosion) to close gaps
+      const closedGrid = morphologicalClosing(binaryGrid, 3);
+      
+      console.log('Extracting outer contour...');
+      // Extract outer contour
+      const contour = extractOuterContour(closedGrid);
+      
+      console.log('Contour extracted with', contour.length, 'points');
+      console.log('First few contour points:', contour.slice(0, 5));
+      
+      if (contour.length < 3) {
+        console.log('Contour too short, aborting');
+        segmentationOutline = null;
+        return;
+      }
+      
+      console.log('Simplifying contour...');
+      // For now, skip simplification to see the raw contour
+      const simplifiedContour = contour; // Use raw contour without simplification
+      console.log('Using raw contour with', simplifiedContour.length, 'points');
+      
+      console.log('Scaling contour...');
+      // Scale contour to canvas coordinates
+      const scaledContour = simplifiedContour.map(pt => ({
+        x: pt.x * scaleX,
+        y: pt.y * scaleY
+      }));
+      
+      segmentationOutline = scaledContour;
+      console.log('Outline created with', scaledContour.length, 'points');
+      
+    } catch (err) {
+      console.error('Segmentation outline failed:', err);
+      
+      // Fallback: create a simple rectangle outline for testing
+      console.log('Creating fallback rectangle outline...');
+      const centerX = p.width / 2;
+      const centerY = p.height / 2;
+      const width = 200;
+      const height = 300;
+      
+      segmentationOutline = [
+        { x: centerX - width/2, y: centerY - height/2 },
+        { x: centerX + width/2, y: centerY - height/2 },
+        { x: centerX + width/2, y: centerY + height/2 },
+        { x: centerX - width/2, y: centerY + height/2 }
+      ];
+      console.log('Fallback outline created with', segmentationOutline.length, 'points');
+    }
+  };
+
+  const drawSegmentationOutlineGlow = () => {
+    console.log('Drawing segmentation outline, points:', segmentationOutline ? segmentationOutline.length : 0);
+    if (!segmentationOutline || segmentationOutline.length < 3) {
+      console.log('No valid outline to draw');
+      return;
+    }
+    p.background(0, 0, 0);
+
+    p.push();
+    
+    // Set up blend mode for RGB glow effect
+    p.blendMode(p.ADD);
+    p.noStroke();
+    
+    // Calculate center of the contour for noise offsets
+    let centerX = 0, centerY = 0;
+    for (let pt of segmentationOutline) {
+      centerX += pt.x;
+      centerY += pt.y;
+    }
+    centerX /= segmentationOutline.length;
+    centerY /= segmentationOutline.length;
+    
+    // Create multiple layers with different colors and noise offsets
+    const layers = 30; // Number of blob layers
+    const baseSize = 0.8; // Base size multiplier
+    const sizeStep = (1.0 - baseSize) / layers; // Size increment per layer
+    const maxNoise = 100; // Maximum noise displacement
+    const t = time * 2; // Time for animation
+    
+    for (let i = layers; i > 0; i--) {
+      const alpha = Math.pow(1 - (i / layers), 2) * 0.8; // Fade out outer layers
+      const size = baseSize + i * sizeStep;
+      const noiseOffset = i * 0.1; // Different noise offset per layer
+      
+      // Red layer
+      p.fill(255, 0, 0, alpha * 255);
+      drawNoisyBlob(segmentationOutline, centerX, centerY, size, t + noiseOffset, maxNoise);
+      
+      // Green layer
+      p.fill(0, 255, 0, alpha * 255);
+      drawNoisyBlob(segmentationOutline, centerX, centerY, size, t + noiseOffset + 0.2, maxNoise);
+      
+      // Blue layer
+      p.fill(0, 0, 255, alpha * 255);
+      drawNoisyBlob(segmentationOutline, centerX, centerY, size, t + noiseOffset + 0.4, maxNoise);
+    }
+    
+    p.pop();
+    console.log('RGB blob effect drawn successfully');
+  };
+
+  // Draw a noisy blob based on the body contour
+  const drawNoisyBlob = (contour, centerX, centerY, size, t, maxNoise) => {
+    p.beginShape();
+    
+    for (let i = 0; i < contour.length; i++) {
+      const pt = contour[i];
+      
+      // Calculate noise based on point position and time
+      const noiseX = p.noise(pt.x * 0.01, pt.y * 0.01, t) * maxNoise;
+      const noiseY = p.noise(pt.x * 0.01 + 100, pt.y * 0.01 + 100, t) * maxNoise;
+      
+      // Apply size scaling and noise displacement
+      const scaledX = centerX + (pt.x - centerX) * size + noiseX;
+      const scaledY = centerY + (pt.y - centerY) * size + noiseY;
+      
+      p.curveVertex(scaledX, scaledY);
+    }
+    
+    // Close the shape by repeating first few points
+    for (let i = 0; i < 3; i++) {
+      const pt = contour[i];
+      const noiseX = p.noise(pt.x * 0.01, pt.y * 0.01, t) * maxNoise;
+      const noiseY = p.noise(pt.x * 0.01 + 100, pt.y * 0.01 + 100, t) * maxNoise;
+      const scaledX = centerX + (pt.x - centerX) * size + noiseX;
+      const scaledY = centerY + (pt.y - centerY) * size + noiseY;
+      p.curveVertex(scaledX, scaledY);
+    }
+    
+    p.endShape();
+  };
+
+  // Morphological closing: dilation followed by erosion
+  const morphologicalClosing = (grid, kernelSize) => {
+    const height = grid.length;
+    const width = grid[0].length;
+    const halfKernel = Math.floor(kernelSize / 2);
+    
+    // Dilation
+    const dilated = [];
+    for (let y = 0; y < height; y++) {
+      dilated[y] = [];
+      for (let x = 0; x < width; x++) {
+        let maxVal = 0;
+        for (let ky = -halfKernel; ky <= halfKernel; ky++) {
+          for (let kx = -halfKernel; kx <= halfKernel; kx++) {
+            const ny = y + ky;
+            const nx = x + kx;
+            if (ny >= 0 && ny < height && nx >= 0 && nx < width) {
+              maxVal = Math.max(maxVal, grid[ny][nx]);
+            }
+          }
+        }
+        dilated[y][x] = maxVal;
+      }
+    }
+    
+    // Erosion
+    const eroded = [];
+    for (let y = 0; y < height; y++) {
+      eroded[y] = [];
+      for (let x = 0; x < width; x++) {
+        let minVal = 1;
+        for (let ky = -halfKernel; ky <= halfKernel; ky++) {
+          for (let kx = -halfKernel; kx <= halfKernel; kx++) {
+            const ny = y + ky;
+            const nx = x + kx;
+            if (ny >= 0 && ny < height && nx >= 0 && nx < width) {
+              minVal = Math.min(minVal, dilated[ny][nx]);
+            }
+          }
+        }
+        eroded[y][x] = minVal;
+      }
+    }
+    
+    return eroded;
+  };
+
+  // Extract outer contour using boundary tracing
+  const extractOuterContour = (grid) => {
+    const height = grid.length;
+    const width = grid[0].length;
+    const contour = [];
+    
+    console.log('ExtractOuterContour: grid size', width, 'x', height);
+    
+    // Find starting point (first white pixel from top-left)
+    let startX = -1, startY = -1;
+    for (let y = 0; y < height && startY === -1; y++) {
+      for (let x = 0; x < width && startX === -1; x++) {
+        if (grid[y][x] === 1) {
+          startX = x;
+          startY = y;
+        }
+      }
+    }
+    
+    console.log('Starting point found at:', startX, startY);
+    
+    if (startX === -1) {
+      console.log('No starting point found - no white pixels in grid');
+      return contour;
+    }
+    
+    // Moore-Neighbor tracing algorithm
+    const directions = [
+      [-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]
+    ];
+    
+    let currentX = startX;
+    let currentY = startY;
+    let direction = 0; // Start looking right
+    
+    do {
+      contour.push({ x: currentX, y: currentY });
+      
+      // Look for next boundary pixel
+      let found = false;
+      for (let i = 0; i < 8 && !found; i++) {
+        const nextDir = (direction + i) % 8;
+        const dx = directions[nextDir][0];
+        const dy = directions[nextDir][1];
+        const nextX = currentX + dx;
+        const nextY = currentY + dy;
+        
+        if (nextX >= 0 && nextX < width && nextY >= 0 && nextY < height) {
+          if (grid[nextY][nextX] === 1) {
+            currentX = nextX;
+            currentY = nextY;
+            direction = (nextDir + 6) % 8; // Turn left
+            found = true;
+          }
+        }
+      }
+      
+      if (!found) break;
+      
+    } while (!(currentX === startX && currentY === startY) && contour.length < width * height);
+    
+    return contour;
+  };
+
+  // Simplify contour using distance-based simplification
+  const simplifyContour = (contour, tolerance) => {
+    console.log('Simplifying contour with', contour.length, 'points, tolerance:', tolerance);
+    if (contour.length <= 2) return contour;
+    
+    const simplified = [contour[0]];
+    let removedCount = 0;
+    
+    for (let i = 1; i < contour.length - 1; i++) {
+      const prev = contour[i - 1];
+      const curr = contour[i];
+      const next = contour[i + 1];
+      
+      // Calculate distance from current point to line segment
+      const dist = pointToLineDistance(curr, prev, next);
+      
+      if (dist > tolerance) {
+        simplified.push(curr);
+      } else {
+        removedCount++;
+      }
+    }
+    
+    simplified.push(contour[contour.length - 1]);
+    console.log('Simplification removed', removedCount, 'points, kept', simplified.length, 'points');
+    return simplified;
+  };
+
+  // Calculate distance from point to line segment
+  const pointToLineDistance = (point, lineStart, lineEnd) => {
+    const A = point.x - lineStart.x;
+    const B = point.y - lineStart.y;
+    const C = lineEnd.x - lineStart.x;
+    const D = lineEnd.y - lineStart.y;
+    
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    
+    if (lenSq === 0) {
+      return Math.sqrt(A * A + B * B);
+    }
+    
+    const param = dot / lenSq;
+    
+    let xx, yy;
+    if (param < 0) {
+      xx = lineStart.x;
+      yy = lineStart.y;
+    } else if (param > 1) {
+      xx = lineEnd.x;
+      yy = lineEnd.y;
+    } else {
+      xx = lineStart.x + param * C;
+      yy = lineStart.y + param * D;
+    }
+    
+    const dx = point.x - xx;
+    const dy = point.y - yy;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // Legacy pose-based outline (keeping for fallback)
+  const drawPoseOutlineGlow = () => {
+    if (!poseResults) return;
+
+    // Simple body outline focusing on main silhouette
+    // Just trace the outer edge of the body
+    const outlineIndices = [
+      // Head: nose to left ear to back of head to right ear
+      0, 2, 4, 6, 8, 10, 9, 7, 5, 3, 1, 0,
+      // Down to shoulders
+      0, 11, 12,
+      // Right side: shoulder to hip
+      12, 24,
+      // Left side: hip to shoulder  
+      24, 23, 11,
+      // Back to head
+      11, 0
+    ];
+
+    const outline = outlineIndices
+      .map(i => poseResults[i])
+      .filter(pt => pt && pt.visibility > 0.5)
+      .map(pt => ({ x: pt.x * p.width, y: pt.y * p.height }));
+
+    if (outline.length < 3) return;
+
+    p.push();
+    p.noFill();
+    p.stroke(0, 255, 255);
+    p.strokeWeight(4);
+    p.drawingContext.shadowBlur = 25;
+    p.drawingContext.shadowColor = 'rgba(0,255,255,0.8)';
+
+    // Draw the outline
+    p.beginShape();
+    for (let pt of outline) {
+      p.vertex(pt.x, pt.y);
+    }
+    p.endShape(p.CLOSE);
+
+    p.pop();
   };
 
   const setupBodyPix = async () => {
@@ -510,7 +958,7 @@ const Heart2Heart = (p) => {
     modeSelect.option('Flow', 'flow');
     modeSelect.option('Blur', 'blur');
     modeSelect.option('Mask', 'mask');
-    modeSelect.option('Blob', 'blob');
+    modeSelect.option('Aura', 'blob');
     modeSelect.selected(mode);
     modeSelect.changed(() => { 
       mode = modeSelect.value(); 
@@ -693,6 +1141,28 @@ const Heart2Heart = (p) => {
         drawBodyPixPoints();
       } else {
         drawPoseLandmarks();
+      }
+    }
+
+    // Update segmentation outline periodically
+    console.log('Draw loop - mode:', mode, 'useTensorFlow:', useTensorFlow, 'trackingMode:', trackingMode);
+    if (mode === 'blob' && useTensorFlow && trackingMode !== 'hands') {
+      const currentTime = p.millis();
+      if (currentTime - lastSegmentationUpdate > 100) { // Update every 100ms
+        console.log('Updating segmentation outline...');
+        updateSegmentationOutline();
+        lastSegmentationUpdate = currentTime;
+      }
+    }
+
+    // Draw pose outline glow effect
+    if (mode === 'blob' && trackingMode !== 'hands') {
+      if (useTensorFlow) {
+        // Use TensorFlow segmentation for more accurate outline
+        drawSegmentationOutlineGlow();
+      } else {
+        // Fallback to pose-based outline
+        drawPoseOutlineGlow();
       }
     }
 
