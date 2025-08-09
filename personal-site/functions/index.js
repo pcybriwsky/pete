@@ -37,6 +37,7 @@ exports.printSongSwap = onCall(async (request) => {
     
     // Extract only the song data we need
     const printJobData = {
+      type: 'swap',
       depositedSong: data.depositedSong,
       receivedSong: data.receivedSong,
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
@@ -54,5 +55,29 @@ exports.printSongSwap = onCall(async (request) => {
   } catch (error) {
     console.error('Print function error:', error);
     throw new Error(error.message || 'Failed to queue print job');
+  }
+});
+
+// New: withdrawal-only print (recommendation slip)
+exports.printWithdrawal = onCall(async (request) => {
+  try {
+    const { data } = request;
+    if (!data || !data.receivedSong) {
+      throw new Error('Missing receivedSong');
+    }
+
+    const printJobData = {
+      type: 'withdrawal',
+      receivedSong: data.receivedSong,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      status: 'pending'
+    };
+
+    console.log('Withdrawal print job to store:', JSON.stringify(printJobData, null, 2));
+    await admin.firestore().collection('printJobs').add(printJobData);
+    return { success: true, message: 'Withdrawal print job queued' };
+  } catch (error) {
+    console.error('printWithdrawal error:', error);
+    throw new Error(error.message || 'Failed to queue withdrawal print job');
   }
 });

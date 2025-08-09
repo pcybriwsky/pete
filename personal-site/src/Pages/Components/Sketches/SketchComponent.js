@@ -9,6 +9,7 @@ import Flowfield from './Flowfield';
 import Sun from './SimpleSun';
 import SunAndMoon from './SunAndMoon';
 import Lenticular from './Lenticular';
+import Twist from './Twist';
 import Atmosphere2 from './Atmosphere2';
 import Heart2Heart from './Heart2Heart';
 import Trees from './Trees';
@@ -50,7 +51,8 @@ const sketchMap = {
   Trees,
   Heart2Heart,
   Atmosphere,
-  Atmosphere2
+  Atmosphere2,
+  Twist
 };
 
 const P5Wrapper = ({ sketch }) => {

@@ -1,6 +1,7 @@
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, onSnapshot, query, orderBy, limit, updateDoc, doc } = require('firebase/firestore');
 const { exec } = require('child_process');
+const Jimp = require('jimp');
 const fs = require('fs');
 const path = require('path');
 
@@ -76,6 +77,47 @@ const QR_PRINT = `${GS}k${String.fromCharCode(3)}${String.fromCharCode(0)}`; // 
 // Add logging at the top of the file
 console.log('🔥 Print script loaded - PID:', process.pid, 'Time:', new Date().toISOString());
 
+// ===== Global knobs and content pools =====
+const IG_HANDLE = '@_re_pete';
+const IG_URL = 'https://instagram.com/_re_pete';
+const BUILD_VERSION = 'v1.0';
+const ENABLE_ASCII = true;
+const ENABLE_IG_QR = false;
+const RARE_ASCII_ODDS = 1 / 30;
+const ENABLE_LOGO = true; // Toggle: print logo PNG at top of receipt
+const LOGO_MAX_WIDTH = 512; // Dots; bumped up for bigger logo; TM-T20III 80mm supports up to 576
+const LOGO_PATH = path.join(__dirname, 'src', 'Assets', 'Images', 'BangersOnlyBank.png');
+
+const QUIPS = {
+  headerDeposit: [
+    'BANGER DEPOSIT',
+  ],
+  headerWithdraw: [ 
+    'CERTIFIED BANGER',
+  ],
+  qr: [
+    'SCAN ME (consent to bop)',
+    'May cause head nodding',
+    'Open responsibly'
+  ],
+  policyDeposit: [
+    'ALL BANGER DEPOSITS',
+    'NO REFUNDS. ONLY RERUNS.',
+    'TERMS: VIBES ONLY'
+  ],
+  policyWithdraw: [
+    'ALL WITHDRAWALS ARE FINAL',
+    'HANDLE VIBES WITH CARE',
+    'NO RETURNS AFTER CHORUS'
+  ],
+  footer: [
+    'Certified heat by thermal paper',
+    'Free coupon: 1 head nod',
+    'Support your local DJ (it’s probably you)',
+    `If lost, return this vibe to ${IG_HANDLE}`
+  ]
+};
+
 // Helpers for ESC/POS text layout (3-inch ~ 32 chars width)
 const LINE_WIDTH = 48; // Use wider width for full 80mm paper alignment
 const HEADER_WIDTH = Math.floor(LINE_WIDTH / 2); // when using double-width for header
@@ -120,6 +162,110 @@ const msToMMSS = (ms) => {
 
 // Feed helper: ESC d n  -> print and feed n lines
 const FEED = (n = 3) => `${ESC}d${String.fromCharCode(Math.max(0, Math.min(255, n)))}`;
+
+// ===== Helper utilities =====
+function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+function chance(p = 0.1) { return Math.random() < p; }
+// function asciiSmall(v = 'v1.0') { return `== SONG SWAP ==\n==== ${v} ====\n\n`; }
+function shortUrl(u) { return u && u.length > 36 ? u.slice(0, 33) + '...' : (u || ''); }
+function pickFooter() { return pick(QUIPS.footer); }
+function pickQrCaption() { return pick(QUIPS.qr); }
+function pickPolicy(jobType) { return jobType === 'withdrawal' ? pick(QUIPS.policyWithdraw) : pick(QUIPS.policyDeposit); }
+
+// ===== Image to ESC/POS raster helpers =====
+function bytesToBinaryString(byteArray) {
+  let result = '';
+  for (let i = 0; i < byteArray.length; i += 1) {
+    result += String.fromCharCode(byteArray[i]);
+  }
+  return result;
+}
+
+// Build GS v 0 raster bit image command from raw 1bpp data
+function buildRasterImageCommand(bitmapBytesPerRow, height, rasterData, mode = 0) {
+  const xL = bitmapBytesPerRow & 0xff;
+  const xH = (bitmapBytesPerRow >> 8) & 0xff;
+  const yL = height & 0xff;
+  const yH = (height >> 8) & 0xff;
+  const header = [0x1d, 0x76, 0x30, mode, xL, xH, yL, yH];
+  const payload = new Uint8Array(header.length + rasterData.length);
+  payload.set(header, 0);
+  payload.set(rasterData, header.length);
+  return bytesToBinaryString(payload);
+}
+
+// Load PNG, scale, threshold → raster ESC/POS string
+async function buildLogoRasterString(imagePath, maxWidth = LOGO_MAX_WIDTH) {
+  try {
+    if (!fs.existsSync(imagePath)) return '';
+    const image = await Jimp.read(imagePath);
+    const targetWidth = Math.min(maxWidth, image.bitmap.width);
+    image.resize(targetWidth, Jimp.AUTO).grayscale().contrast(0.3);
+    const { width, height, data } = image.bitmap; // RGBA
+    const bytesPerRow = Math.ceil(width / 8);
+    const raster = new Uint8Array(bytesPerRow * height);
+    const threshold = 0.5; // 0..1
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const idx = (y * width + x) * 4;
+        const r = data[idx] / 255;
+        const g = data[idx + 1] / 255;
+        const b = data[idx + 2] / 255;
+        const a = data[idx + 3] / 255;
+        // simple luminance; ignore alpha for paper
+        const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        const isBlack = (1 - lum) > threshold && a > 0.1;
+        const byteIndex = y * bytesPerRow + (x >> 3);
+        const bit = 7 - (x & 7);
+        if (isBlack) {
+          raster[byteIndex] |= (1 << bit);
+        }
+      }
+    }
+    return buildRasterImageCommand(bytesPerRow, height, raster, 0);
+  } catch (e) {
+    console.warn('⚠️ Logo rendering failed:', e.message);
+    return '';
+  }
+}
+
+// Convert Spotify URI to https URL for QR scanning
+function spotifyUriToUrl(uri = '') {
+  if (!uri) return '';
+  if (uri.startsWith('spotify:track:')) {
+    const id = uri.split(':')[2];
+    return `https://open.spotify.com/track/${id}`;
+  }
+  if (uri.startsWith('spotify:album:')) {
+    const id = uri.split(':')[2];
+    return `https://open.spotify.com/album/${id}`;
+  }
+  if (uri.startsWith('spotify:artist:')) {
+    const id = uri.split(':')[2];
+    return `https://open.spotify.com/artist/${id}`;
+  }
+  // Fallback to original if already a URL or unsupported
+  return uri;
+}
+
+// Build Epson ESC/POS QR code string (Model 2, configurable size & EC)
+function buildEpsonQR(data, moduleSize = 5, ecLevel = '1') {
+  // data as binary string
+  const payload = Buffer.from(String(data), 'utf8').toString('binary');
+  const pL = String.fromCharCode((payload.length + 3) & 0xff);
+  const pH = String.fromCharCode(((payload.length + 3) >> 8) & 0xff);
+  // Model: GS ( k 4 0 49 65 50 0  (Model 2)
+  const model = `${GS}(k\x04\x00\x31\x41\x32\x00`;
+  // Size:  GS ( k 3 0 49 67 n
+  const size = `${GS}(k\x03\x00\x31\x43${String.fromCharCode(moduleSize)}`;
+  // EC:    GS ( k 3 0 49 69 n  (n='0'..'3')
+  const ec = `${GS}(k\x03\x00\x31\x45${ecLevel}`;
+  // Store: GS ( k pL pH 49 80 48 data
+  const store = `${GS}(k${pL}${pH}\x31\x50\x30${payload}`;
+  // Print: GS ( k 3 0 49 81 48
+  const print = `${GS}(k\x03\x00\x31\x51\x30`;
+  return model + size + ec + store + print;
+}
 
 // Generate HTML receipt preview
 function generateReceiptHTML() {
@@ -330,11 +476,121 @@ async function createAndPrintCard(printJob) {
       // Alternative format
       depositedSong = printJob.deposited;
       receivedSong = printJob.received;
+    } else if (printJob.type === 'withdrawal' && printJob.receivedSong) {
+      receivedSong = printJob.receivedSong;
     } else {
       // Fallback - just log whatever we got
       console.log('🎵 JOB RECEIVED! (Unknown format)');
       console.log('Print job data:', printJob);
       console.log('---');
+      return;
+    }
+
+    // If withdrawal-only job, render the withdrawal slip
+    if (printJob.type === 'withdrawal' && receivedSong) {
+      const depNum = receivedSong.depositNumber != null
+        ? String(receivedSong.depositNumber).padStart(3, '0')
+        : '—';
+      const sender = receivedSong.submittedByName || 'UNKNOWN USER';
+      const title = receivedSong.title || '';
+      const artist = receivedSong.artist || '';
+      const duration = msToMMSS(receivedSong.duration);
+      const genre = receivedSong.genre || '';
+      const note = receivedSong.recommendation || '';
+
+      const lines = [];
+      lines.push(
+        INIT,
+        ESC + '2',
+        ALIGN_LEFT,
+        FONT_A,
+        NORMAL_SIZE,
+        FEED(2)
+      );
+
+      // Optional ASCII banner before header
+      if (ENABLE_ASCII && chance(RARE_ASCII_ODDS)) {
+        lines.push(ALIGN_CENTER, asciiSmall(BUILD_VERSION), ALIGN_LEFT);
+      }
+
+      // Optional logo at top
+      if (ENABLE_LOGO) {
+        try {
+          const logoStr = await buildLogoRasterString(LOGO_PATH);
+          if (logoStr) {
+            lines.push(ALIGN_CENTER, logoStr, ALIGN_LEFT, '\n');
+          }
+        } catch (e) {
+          console.warn('⚠️ Failed to add logo (withdrawal):', e.message);
+        }
+      }
+
+      // Header
+      const headerTextW = pick(QUIPS.headerWithdraw);
+      lines.push(
+        DOUBLE_WIDTH,
+        toUpper(twoCol(headerTextW, depNum, HEADER_WIDTH)) + '\n',
+        NORMAL_SIZE,
+        '\n'
+      );
+
+      // Body
+      lines.push(
+        BOLD_ON + toUpper('RECOMMENDED BY:') + BOLD_OFF + '\n',
+        toUpper(wrapText(sender).join('\n')) + '\n' + '\n',
+        BOLD_ON + toUpper(twoCol('SONG', 'DURATION', LINE_WIDTH)) + BOLD_OFF + '\n',
+        toUpper(twoCol(title, duration, LINE_WIDTH)) + '\n',
+        toUpper('BY ' + artist) + '\n' + '\n',
+        BOLD_ON + toUpper('GENRE:') + BOLD_OFF + ' ' + toUpper(genre) + '\n' + '\n',
+        BOLD_ON + toUpper('NOTE FROM SENDER') + BOLD_OFF + '\n'
+      );
+      wrapText(toUpper(note)).forEach(l => lines.push(l + '\n'));
+
+      // QR caption + short URL, then QR
+      const songUrlW = spotifyUriToUrl(receivedSong.uri || '');
+      lines.push(ALIGN_CENTER, buildEpsonQR(songUrlW), ALIGN_LEFT, '\n');
+
+      // IG follow block
+      // if (ENABLE_IG_QR) {
+      //   lines.push(ALIGN_CENTER, toUpper(`FOLLOW ${IG_HANDLE}`) + '\n');
+      //   lines.push(ALIGN_CENTER, buildEpsonQR(IG_URL, 4), ALIGN_LEFT, '\n');
+      // }
+
+      // Policy + footer + version/date
+      const policyW = pickPolicy('withdrawal');
+      lines.push(ALIGN_CENTER, toUpper(policyW) + '\n');
+      lines.push(ALIGN_CENTER, pickFooter() + '\n');
+      lines.push(ALIGN_CENTER, `${BUILD_VERSION} • ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}` + '\n');
+
+      // Thank you and cut
+      lines.push('\n', ALIGN_CENTER, toUpper('THANK YOU') + '\n', toUpper('COME AGAIN') + '\n');
+      lines.push(FEED(2), INIT, FULL_CUT_N3);
+
+      const receiptBuffer = Buffer.from(lines.join(''), 'binary');
+      const tempDir = path.join(__dirname, 'temp');
+      if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+      const filename = `withdrawal_${Date.now()}.txt`;
+      const filepath = path.join(tempDir, filename);
+      fs.writeFileSync(filepath, receiptBuffer);
+
+      const possiblePrinters = ['EPSON_TM_T20III','Epson_TM_T20III','TM-T20III','TM-T20','Epson'];
+      let printCommand = '';
+      let printerFound = false;
+      for (const printerName of possiblePrinters) {
+        try {
+          const { execSync } = require('child_process');
+          execSync(`lpstat -p "${printerName}"`, { stdio: 'pipe' });
+          printCommand = `lp -d "${printerName}" -o raw "${filepath}"`;
+          printerFound = true;
+          break;
+        } catch (e) {}
+      }
+      if (!printerFound) printCommand = `lp -o raw "${filepath}"`;
+      console.log('🖨️ Executing print command:', printCommand);
+      exec(printCommand, (error) => {
+        if (error) return console.error('❌ Print error:', error);
+        setTimeout(() => { try { fs.unlinkSync(filepath); } catch {} }, 5000);
+      });
       return;
     }
 
@@ -357,13 +613,37 @@ async function createAndPrintCard(printJob) {
       FONT_A, // ensure wider, standard font
       NORMAL_SIZE,
       // Top feed to match bottom
-      FEED(2),
-      // Header row in double width so it visually spans 80mm better
+      FEED(2)
+    );
+
+    // Optional ASCII banner before header
+    if (ENABLE_ASCII && chance(RARE_ASCII_ODDS)) {
+      lines.push(ALIGN_CENTER, asciiSmall(BUILD_VERSION), ALIGN_LEFT);
+    }
+
+    // Optional logo at top
+    if (ENABLE_LOGO) {
+      try {
+        const logoStr = await buildLogoRasterString(LOGO_PATH);
+        if (logoStr) {
+          lines.push(ALIGN_CENTER, logoStr, ALIGN_LEFT, '\n');
+        }
+      } catch (e) {
+        console.warn('⚠️ Failed to add logo (deposit):', e.message);
+      }
+    }
+
+    // Header row in double width so it visually spans 80mm better
+    const headerTextD = pick(QUIPS.headerDeposit);
+    lines.push(
       DOUBLE_WIDTH,
-      toUpper(twoCol('DEPOSIT', depNum, HEADER_WIDTH)) + '\n',
+      toUpper(twoCol(headerTextD, depNum, HEADER_WIDTH)) + '\n',
       NORMAL_SIZE,
-      '\n',
-      // Deposited by
+      '\n'
+    );
+
+    // Deposited by
+    lines.push(
       BOLD_ON + toUpper('DEPOSITED BY:') + BOLD_OFF + '\n',
       toUpper(wrapText(depositor).join('\n')) + '\n' + '\n',
       // Song and duration header
@@ -377,6 +657,25 @@ async function createAndPrintCard(printJob) {
       BOLD_ON + toUpper('DEPOSIT NOTE') + BOLD_OFF + '\n'
     );
     wrapText(toUpper(note)).forEach(l => lines.push(l + '\n'));
+
+    // QR caption + short URL, then QR
+    const songUrlD = spotifyUriToUrl(depositedSong.uri || '');
+    lines.push(ALIGN_CENTER, toUpper(pickQrCaption()) + '\n', shortUrl(songUrlD) + '\n');
+    lines.push(ALIGN_CENTER, buildEpsonQR(songUrlD), ALIGN_LEFT, '\n');
+
+    // IG follow block
+    if (ENABLE_IG_QR) {
+      lines.push(ALIGN_CENTER, toUpper(`FOLLOW ${IG_HANDLE}`) + '\n');
+      lines.push(ALIGN_CENTER, buildEpsonQR(IG_URL, 4), ALIGN_LEFT, '\n');
+    }
+
+    // Policy + footer + version/date
+    const policyD = pickPolicy('deposit');
+    lines.push(ALIGN_CENTER, toUpper(policyD) + '\n');
+    lines.push(ALIGN_CENTER, pickFooter() + '\n');
+    lines.push(ALIGN_CENTER, `${BUILD_VERSION} • ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}` + '\n');
+
+    // Thank you and cut
     lines.push('\n', ALIGN_CENTER, toUpper('THANK YOU') + '\n', toUpper('COME AGAIN') + '\n');
     // Ensure space before cut, re-init to clear modes, then single Epson cut with built-in feed
     lines.push(FEED(2), INIT, FULL_CUT_N3);
@@ -466,7 +765,7 @@ async function main() {
         if (!processedJobs.has(jobId) && printJob.status === 'pending') {
           processedJobs.add(jobId);
           
-          console.log('🎵 New print job detected:', printJob.depositedSong.title, '⇄', printJob.receivedSong.title);
+          console.log('🎵 New print job detected:', printJob?.depositedSong?.title || printJob?.receivedSong?.title);
           
           // Update status to processing
           await updateDoc(doc(db, 'printJobs', jobId), {

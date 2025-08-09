@@ -52,8 +52,48 @@ const Gradient = (p) => {
     // Lemniscate
     ALem: 1,
     BLem: 1,
+    // Squiggle
+    squiggleSpeed: 1,
+    squiggleAmp: 1,
+    // Wave sweep
+    waveSpeed: 0.8,
+    waveFreq: 1.2,
+    waveAmp: 0.8,
   });
   let equationParams = getDefaultEquationParams();
+  let squiggleXOff = 1000 * Math.random();
+  let squiggleYOff = 2000 * Math.random();
+
+  // --- Ambient Mode Variables ---
+  const AMBIENT_ENABLED = true;
+  let isAmbient = false;
+  let ambientPrevMode = null;
+  let idleTimeoutMs = 8000; // enter ambient after ~8s of low motion
+  let ambientEquationSwitchMs = 30000; // switch equation every 30s
+  let ambientPaletteSwitchMs = 20000; // rotate palette every 20s
+  let lastMotionMs = 0;
+  let lastEquationSwitchAtMs = 0;
+  let lastPaletteSwitchAtMs = 0;
+  let ambientEquationIndex = 0;
+  const ambientEquationOrder = [
+    'wave_sweep',
+    'lissajous',
+    'rose',
+    'squiggle',
+    'lemniscate',
+    'hypotrochoid',
+    'epitrochoid',
+    'arch_spiral',
+  ];
+  let prevTargetX = 0;
+  let prevTargetY = 0;
+  let prevSensorX = 0;
+  let prevSensorY = 0;
+  let prevMouseX = 0;
+  let prevMouseY = 0;
+  let prevJoyX = 0;
+  let prevJoyY = 0;
+  let ambientStartedAtMs = 0;
 
   // --- Visual Style Variables ---
   const palettes = {
@@ -73,13 +113,17 @@ const Gradient = (p) => {
   };
   let currentPalette;
   let selectedPaletteName = 'sunset'; // Track selected palette name
-  let colors = []; // Initialize as empty array
+  let colors = []; // Target palette colors (hex strings)
+  let prevColors = []; // Previous palette colors for crossfade
+  let paletteTransitionProgress = 1; // 0..1
+  let paletteFadeSpeed = 0.02; // per frame increment
   let noiseTexture;
   let circleSize = 0; // Will be set in setup
 
   // --- GUI Elements ---
   let lerpSlider, scaleSlider, pathSlider, circleSizeSlider;
   let paletteSelect, modeSelect, sizeDistributionSelect, shapeSelect;
+  let paletteFadeSlider;
   let equationSelect, equationDtSlider;
   let equationControlsContainer;
   const equationParamSliders = {};
@@ -113,6 +157,28 @@ const Gradient = (p) => {
       case 'lissajous': {
         const { A, B, a, b, delta } = params;
         return { x: A * Math.sin(a * time + delta), y: B * Math.sin(b * time) };
+      }
+      case 'squiggle': {
+        // Perlin-noise-driven wandering path centered at origin
+        const { squiggleSpeed, squiggleAmp } = params;
+        const speed = 0.005 * clamp(squiggleSpeed, 0.2, 4);
+        const amp = clamp(squiggleAmp, 0.1, 3);
+        const nx = p.noise(squiggleXOff + time * speed);
+        const ny = p.noise(squiggleYOff + time * speed);
+        const x = amp * (nx * 2 - 1);
+        const y = amp * (ny * 2 - 1);
+        return { x, y };
+      }
+      case 'wave_sweep': {
+        // Left-to-right sweep with sinusoidal vertical motion
+        // x in [-1, 1] looping, y in [-1,1] sine
+        const { waveSpeed, waveFreq, waveAmp } = params;
+        const speed = clamp(waveSpeed, 0.1, 3);
+        const freq = clamp(waveFreq, 0.2, 4);
+        const amp = clamp(waveAmp, 0.1, 1.5);
+        const x = ((time * speed) % (2 * Math.PI)) / Math.PI - 1; // map 0..2π → -1..1
+        const y = amp * Math.sin(time * freq * 2 * Math.PI);
+        return { x, y };
       }
       case 'rose': {
         const { k, R } = params; // r = R * cos(k theta)
@@ -148,6 +214,47 @@ const Gradient = (p) => {
       default:
         return { x: 0, y: 0 };
     }
+  };
+
+  // Narrow ambient parameter ranges (tasteful defaults)
+  const randomAmbientParamsFor = (type) => {
+    const p2 = { ...equationParams };
+    switch (type) {
+      case 'wave_sweep':
+        p2.waveSpeed = p.random(0.5, 1.2);
+        p2.waveFreq = p.random(0.6, 1.6);
+        p2.waveAmp = p.random(0.5, 1.0);
+        break;
+      case 'lissajous':
+        p2.A = 1; p2.B = 1;
+        p2.a = Math.round(p.random(2, 5));
+        p2.b = Math.round(p.random(2, 5));
+        p2.delta = p.random(0, Math.PI);
+        break;
+      case 'rose':
+        p2.k = Math.round(p.random(3, 7));
+        p2.R = p.random(0.7, 1.2);
+        break;
+      case 'squiggle':
+        p2.squiggleSpeed = p.random(0.6, 1.4);
+        p2.squiggleAmp = p.random(0.5, 1.2);
+        break;
+      case 'lemniscate':
+        p2.ALem = p.random(0.8, 1.2);
+        p2.BLem = p.random(0.8, 1.2);
+        break;
+      case 'hypotrochoid':
+      case 'epitrochoid':
+        p2.bigR = p.random(3, 8);
+        p2.smallr = p.random(1, 4);
+        p2.d = p.random(2, 8);
+        break;
+      case 'arch_spiral':
+        p2.aSpiral = p.random(0.005, 0.03);
+        p2.bSpiral = p.random(0.02, 0.08);
+        break;
+    }
+    return p2;
   };
 
   // Helper to show/hide the motion error modal
@@ -254,11 +361,13 @@ const Gradient = (p) => {
       randomBtn.style('background-color', '#f0f0f0');
       randomBtn.mousePressed(() => {
         selectRandomPalette();
-        shufflePalette();
+        const newColors = Object.values(currentPalette).map(c => c.startsWith('#') ? c : `#${c}`);
+        startPaletteTransition(newColors);
       });
       randomBtn.touchStarted(() => {
         selectRandomPalette();
-        shufflePalette();
+        const newColors = Object.values(currentPalette).map(c => c.startsWith('#') ? c : `#${c}`);
+        startPaletteTransition(newColors);
         return false;
       });
 
@@ -696,6 +805,22 @@ const Gradient = (p) => {
     console.log("Shuffled Palette");
   };
 
+  // --- Palette transition helpers ---
+  const startPaletteTransition = (newColors) => {
+    prevColors = colors.slice();
+    colors = newColors.slice();
+    paletteTransitionProgress = 0;
+  };
+
+  const getBlendedColor = (index, t) => {
+    if (prevColors.length === 0 || t >= 1) {
+      return p.color(colors[index % colors.length]);
+    }
+    const from = p.color(prevColors[index % prevColors.length]);
+    const to = p.color(colors[index % colors.length]);
+    return p.lerpColor(from, to, t);
+  };
+
   const generateNoiseTexture = () => {
     noiseTexture.loadPixels();
     // Iterate through each pixel (x, y)
@@ -763,9 +888,14 @@ const Gradient = (p) => {
       paletteSelect.changed(() => {
         selectedPaletteName = paletteSelect.value();
         currentPalette = palettes[selectedPaletteName];
-        colors = Object.values(currentPalette).map(c => c.startsWith('#') ? c : `#${c}`);
-        shufflePalette();
+        const newColors = Object.values(currentPalette).map(c => c.startsWith('#') ? c : `#${c}`);
+        startPaletteTransition(newColors);
       });
+
+      // Palette fade speed
+      paletteFadeSlider = p.createSlider(0.005, 0.2, paletteFadeSpeed, 0.005);
+      paletteFadeSlider.parent(controlPanel);
+      p.createSpan('Palette Fade Speed').parent(controlPanel);
 
       modeSelect = p.createSelect();
       modeSelect.parent(controlPanel);
@@ -804,6 +934,8 @@ const Gradient = (p) => {
       equationSelect = p.createSelect();
       equationSelect.parent(inner);
       equationSelect.option('Lissajous', 'lissajous');
+      equationSelect.option('Squiggle', 'squiggle');
+      equationSelect.option('Wave Sweep', 'wave_sweep');
       equationSelect.option('Rose', 'rose');
       equationSelect.option('Hypotrochoid', 'hypotrochoid');
       equationSelect.option('Epitrochoid', 'epitrochoid');
@@ -814,6 +946,11 @@ const Gradient = (p) => {
         equationType = equationSelect.value();
         t = 0;
         path = [{ x: currentX, y: currentY }];
+        // Reset squiggle offsets for a fresh path
+        if (equationType === 'squiggle') {
+          squiggleXOff = 1000 * Math.random();
+          squiggleYOff = 2000 * Math.random();
+        }
         buildEquationParamSliders();
       });
 
@@ -842,6 +979,15 @@ const Gradient = (p) => {
             addSlider('a', 'a', 1, 10, 1, equationParams.a);
             addSlider('b', 'b', 1, 10, 1, equationParams.b);
             addSlider('delta', 'delta', 0, Math.PI, 0.01, equationParams.delta);
+            break;
+          case 'squiggle':
+            addSlider('Speed', 'squiggleSpeed', 0.2, 4, 0.01, equationParams.squiggleSpeed);
+            addSlider('Amplitude', 'squiggleAmp', 0.1, 3, 0.01, equationParams.squiggleAmp);
+            break;
+          case 'wave_sweep':
+            addSlider('Speed', 'waveSpeed', 0.1, 3, 0.01, equationParams.waveSpeed);
+            addSlider('Frequency', 'waveFreq', 0.2, 4, 0.01, equationParams.waveFreq);
+            addSlider('Amplitude', 'waveAmp', 0.1, 1.5, 0.01, equationParams.waveAmp);
             break;
           case 'rose':
             addSlider('k', 'k', 1, 12, 1, equationParams.k);
@@ -959,6 +1105,8 @@ const Gradient = (p) => {
     const sel = p.createSelect();
     sel.parent(eqBlock);
     sel.option('Lissajous', 'lissajous');
+    sel.option('Squiggle', 'squiggle');
+    sel.option('Wave Sweep', 'wave_sweep');
     sel.option('Rose', 'rose');
     sel.option('Hypotrochoid', 'hypotrochoid');
     sel.option('Epitrochoid', 'epitrochoid');
@@ -992,6 +1140,8 @@ const Gradient = (p) => {
 
     selectRandomPalette();
     circleSize = p.width * 0.3;
+    // Initialize prevColors to avoid first-frame null blend
+    prevColors = colors.slice();
 
     noiseTexture = p.createGraphics(p.width, p.height);
     generateNoiseTexture();
@@ -1008,6 +1158,9 @@ const Gradient = (p) => {
     }
 
     console.log("Gradient setup complete. Press 't' or tap menu button to toggle controls. Press 'r' to shuffle, 's' to save.");
+    lastMotionMs = performance.now();
+    lastEquationSwitchAtMs = lastMotionMs;
+    lastPaletteSwitchAtMs = lastMotionMs;
   };
 
   p.draw = () => {
@@ -1138,13 +1291,108 @@ const Gradient = (p) => {
       }
     }
 
+    // --- Ambient Mode Detection and Scheduling ---
+    const nowMs = performance.now();
+    // Measure sensor/mouse movement magnitude
+    const dx = targetX - prevTargetX;
+    const dy = targetY - prevTargetY;
+    const sensorDx = (deviceOrientationData.gamma || 0) - prevSensorX;
+    const sensorDy = (deviceOrientationData.beta || 0) - prevSensorY;
+    const mouseDx = p.mouseX - prevMouseX;
+    const mouseDy = p.mouseY - prevMouseY;
+    prevMouseX = p.mouseX;
+    prevMouseY = p.mouseY;
+    prevTargetX = targetX;
+    prevTargetY = targetY;
+    prevSensorX = deviceOrientationData.gamma || 0;
+    prevSensorY = deviceOrientationData.beta || 0;
+    // Aggregate movement: in ambient, ignore target/equation motion. Only count user inputs
+    // (mouse, device orientation, joystick if present). Outside ambient, include target motion.
+    let movementMag = 0;
+    if (isAmbient) {
+      movementMag = Math.hypot(sensorDx, sensorDy) * 5 + Math.hypot(mouseDx, mouseDy);
+      // Optionally include joystick deltas
+      if (magic.modules?.joystick) {
+        const jx = magic.modules.joystick.x || 0;
+        const jy = magic.modules.joystick.y || 0;
+        const jdx = jx - prevJoyX;
+        const jdy = jy - prevJoyY;
+        movementMag += Math.hypot(jdx, jdy) * 200; // scale small joystick deltas
+        prevJoyX = jx; prevJoyY = jy;
+      }
+    } else {
+      movementMag = Math.hypot(dx, dy) + Math.hypot(sensorDx, sensorDy) * 5 + Math.hypot(mouseDx, mouseDy);
+    }
+    // Base threshold adapts to canvas size
+    const MOVEMENT_THRESHOLD = Math.max(20, Math.min(p.width, p.height) * 0.01);
+    // When in ambient, require sustained, larger motion to exit to avoid flapping
+    const EXIT_MULTIPLIER = 3;
+    const exitThreshold = isAmbient ? MOVEMENT_THRESHOLD * EXIT_MULTIPLIER : MOVEMENT_THRESHOLD;
+    if (movementMag > exitThreshold) {
+      lastMotionMs = nowMs;
+      if (isAmbient) {
+        // Exit ambient on motion
+        // Debounce: only allow exit if ambient has run for at least 1.5s
+        if (nowMs - ambientStartedAtMs > 1500) {
+          isAmbient = false;
+          if (ambientPrevMode) controlMode = ambientPrevMode;
+        }
+      }
+    }
+
+    if (AMBIENT_ENABLED && !isAmbient && nowMs - lastMotionMs > idleTimeoutMs) {
+      // Enter ambient
+      isAmbient = true;
+      ambientPrevMode = controlMode;
+      controlMode = 'equation';
+      ambientEquationIndex = 0;
+      equationType = ambientEquationOrder[ambientEquationIndex % ambientEquationOrder.length];
+      equationParams = randomAmbientParamsFor(equationType);
+      t = 0;
+      path = [{ x: currentX, y: currentY }];
+      lastEquationSwitchAtMs = nowMs;
+      lastPaletteSwitchAtMs = nowMs;
+      ambientStartedAtMs = nowMs;
+    }
+
+    if (isAmbient) {
+      // Rotate equation
+      if (nowMs - lastEquationSwitchAtMs >= ambientEquationSwitchMs) {
+        ambientEquationIndex = (ambientEquationIndex + 1) % ambientEquationOrder.length;
+        equationType = ambientEquationOrder[ambientEquationIndex];
+        equationParams = randomAmbientParamsFor(equationType);
+        t = 0;
+        path = [{ x: currentX, y: currentY }];
+        lastEquationSwitchAtMs = nowMs;
+      }
+      // Rotate palette
+      if (nowMs - lastPaletteSwitchAtMs >= ambientPaletteSwitchMs) {
+        const paletteNames = Object.keys(palettes);
+        const randomPaletteName = paletteNames[Math.floor(p.random(paletteNames.length))];
+        const randomPalette = palettes[randomPaletteName];
+        const newColors = Object.values(randomPalette).map(c => c.startsWith('#') ? c : `#${c}`);
+        startPaletteTransition(newColors);
+        lastPaletteSwitchAtMs = nowMs;
+      }
+    }
+
+    // Update palette fade speed from UI if available
+    if (paletteFadeSlider) {
+      paletteFadeSpeed = paletteFadeSlider.value();
+    }
+    // Advance crossfade progress
+    if (paletteTransitionProgress < 1) {
+      paletteTransitionProgress = Math.min(1, paletteTransitionProgress + paletteFadeSpeed);
+    }
+
     // --- Smoothly Update Current Position ---
     currentX = p.lerp(currentX, targetX, LERP_FACTOR);
     currentY = p.lerp(currentY, targetY, LERP_FACTOR);
 
     // --- Update Path ---
     path.push({ x: currentX, y: currentY });
-    if (path.length > MAX_PATH_POINTS) {
+    // Immediately trim to the new MAX_PATH_POINTS when decreased
+    while (path.length > MAX_PATH_POINTS) {
       path.shift();
     }
 
@@ -1176,11 +1424,12 @@ const Gradient = (p) => {
         let colorIndex = Math.floor(colorPosition);
         let nextColorIndex = (colorIndex + 1) % colors.length;
         let interpolationFactor = colorPosition - colorIndex;
-        let color1 = p.color(colors[colorIndex]);
-        let color2 = p.color(colors[nextColorIndex]);
+        // Sample colors with crossfade support
+        let color1 = getBlendedColor(colorIndex, paletteTransitionProgress);
+        let color2 = getBlendedColor(nextColorIndex, paletteTransitionProgress);
         let lerpedColor = p.lerpColor(color1, color2, interpolationFactor);
         let nextNextColorIndex = (nextColorIndex + 1) % colors.length;
-        let color3 = p.color(colors[nextNextColorIndex]);
+        let color3 = getBlendedColor(nextNextColorIndex, paletteTransitionProgress);
         let interpolatedColor2 = p.lerpColor(color2, color3, interpolationFactor);
 
         let gradient = p.drawingContext.createLinearGradient(
@@ -1288,8 +1537,11 @@ const Gradient = (p) => {
       }
     }
     if (p.key === 'r' || p.key === 'R') {
-      selectRandomPalette();
-      shufflePalette();
+      const paletteNames = Object.keys(palettes);
+      const randomPaletteName = paletteNames[Math.floor(p.random(paletteNames.length))];
+      const randomPalette = palettes[randomPaletteName];
+      const newColors = Object.values(randomPalette).map(c => c.startsWith('#') ? c : `#${c}`);
+      startPaletteTransition(newColors);
     }
     if (p.key === 's' || p.key === 'S') {
       p.save('gradient-path.png');
@@ -1316,6 +1568,8 @@ const Gradient = (p) => {
         console.log("Magic connection failed, using mouse control.");
       }
     }
+    // Any gesture counts as motion, reset ambient timer
+    lastMotionMs = performance.now();
   };
 
   p.windowResized = () => {

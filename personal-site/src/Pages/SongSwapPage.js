@@ -112,6 +112,51 @@ const SongSwapPage = () => {
     }
   };
 
+  // Immediate recommendation + print withdrawal slip
+  const handleImmediateRecommendationPrint = async () => {
+    console.log('🧾 Immediate recommendation + print...');
+    try {
+      setIsProcessing(true);
+      setError(null);
+
+      // Prefer genres from selected deposit if available
+      const seed = selectedDeposit?.allGenres || [];
+      const receivedSong = await getWeightedRandomSong(seed);
+
+      // Update UI preview
+      setSongs((prev) => ({
+        deposited: prev?.deposited || selectedDeposit || null,
+        received: receivedSong
+      }));
+
+      // Queue withdrawal print
+      const cleanReceivedSong = {
+        title: receivedSong.title,
+        artist: receivedSong.artist,
+        album: receivedSong.album,
+        genre: receivedSong.genre,
+        allGenres: receivedSong.allGenres || [],
+        popularity: receivedSong.popularity,
+        duration: receivedSong.duration,
+        releaseDate: receivedSong.releaseDate,
+        uri: receivedSong.uri,
+        image: receivedSong.image,
+        submittedByName: receivedSong.submittedByName || 'Unknown User',
+        submittedById: receivedSong.submittedById || null,
+        recommendation: receivedSong.recommendation || '',
+        depositNumber: receivedSong.depositNumber || null
+      };
+      const printWithdrawalFn = httpsCallable(functions, 'printWithdrawal');
+      await printWithdrawalFn({ receivedSong: cleanReceivedSong });
+      console.log('✅ Withdrawal print queued');
+    } catch (error) {
+      console.error('❌ Immediate recommendation print error:', error);
+      setError('Failed to get recommendation. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
 
 
   const fetchSpotifyAuth = async () => {
@@ -173,44 +218,49 @@ const SongSwapPage = () => {
     const userData = await getUserData.json();
     setSpotifyUser(userData);
 
-    // Pull all-time #1 track (long_term, limit=1) and enrich with artist genres
-    const oneTopResponse = await fetch(
-      `https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=1`,
+    // Pull top 50 tracks and randomly choose one; enrich with artist genres
+    const top50Response = await fetch(
+      `https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=50`,
       {
         method: "GET",
         headers: { 'Authorization': 'Bearer ' + data.access_token }
       }
     );
 
-    const oneTopData = await oneTopResponse.json();
-    console.log('All-time #1 track response:', oneTopData);
+    const top50Data = await top50Response.json();
+    console.log('Top 50 tracks response:', top50Data);
 
-    if (oneTopData.items && oneTopData.items.length > 0) {
-      const track = oneTopData.items[0];
-      const artistId = track.artists[0].id;
+    if (top50Data.items && top50Data.items.length > 0) {
+      const idx = Math.floor(Math.random() * top50Data.items.length);
+      const track = top50Data.items[idx];
+      const artistId = track.artists?.[0]?.id;
 
-      const artistResponse = await fetch(
-        `https://api.spotify.com/v1/artists/${artistId}`,
-        { method: 'GET', headers: { 'Authorization': 'Bearer ' + data.access_token } }
-      );
-      const artistData = await artistResponse.json();
+      let artistGenres = [];
+      if (artistId) {
+        const artistResponse = await fetch(
+          `https://api.spotify.com/v1/artists/${artistId}`,
+          { method: 'GET', headers: { 'Authorization': 'Bearer ' + data.access_token } }
+        );
+        const artistData = await artistResponse.json();
+        artistGenres = artistData.genres || [];
+      }
 
       const topSong = {
         title: track.name,
-        artist: track.artists[0].name,
+        artist: track.artists?.[0]?.name || 'Unknown',
         uri: track.uri,
-        image: track.album.images[0]?.url || null,
-        album: track.album.name,
-        genre: artistData.genres?.[0] || 'Unknown',
-        allGenres: artistData.genres || [],
+        image: track.album?.images?.[0]?.url || null,
+        album: track.album?.name || 'Unknown',
+        genre: artistGenres?.[0] || 'Unknown',
+        allGenres: artistGenres,
         popularity: track.popularity,
         duration: track.duration_ms,
-        releaseDate: track.album.release_date,
-        rank: 1,
+        releaseDate: track.album?.release_date || null,
+        rank: idx + 1,
         source: 'spotify'
       };
 
-      // Auto-select deposit
+      // Auto-select deposit with this random top-50 choice
       setSelectedDeposit(topSong);
       setTopSongs([topSong]);
     }
@@ -646,7 +696,7 @@ const SongSwapPage = () => {
               </button>
               <button 
                 className="auth-button recommendation"
-                onClick={handleRecommendation}
+                onClick={handleImmediateRecommendationPrint}
                 disabled={isProcessing}
               >
                 <span className="auth-icon">💡</span>
