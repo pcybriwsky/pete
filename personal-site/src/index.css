@@ -26,7 +26,7 @@ code {
   }
 
   .footerText{
-      @apply text-center text-white text-lg py-[15px] laptop:text-left desktop:text-left hover:text-deepOrange ease-linear transition-all duration-150;
+      @apply text-center text-white text-lg py-[15px] laptop:text-left desktop:text-left hover:text-primary ease-linear transition-all duration-150;
   }
 
   .footerIcon{

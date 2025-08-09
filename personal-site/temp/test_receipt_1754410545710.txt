@@ -1,0 +1,33 @@
+
+================================
+        TEST RECEIPT
+================================
+
+🎵 SONG SWAP TEST
+This is a test print to verify
+the thermal printer is working!
+
+📤 DEPOSITED SONG:
+Test Song Title
+by Test Artist
+from Test Album
+Genre: Test Genre
+
+📥 RECEIVED SONG:
+Another Test Song
+by Another Artist
+from Another Album
+Genre: Another Genre
+
+================================
+     🎵 TEST COMPLETE! 🎵
+================================
+
+Date: 8/5/2025
+Time: 12:15:45 PM
+Location: repete.art
+
+================================
+        THANK YOU!
+================================
+

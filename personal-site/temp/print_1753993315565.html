@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Song Swap Card</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <style>
+        body { margin: 0; padding: 20px; background: #f0f0f0; }
+        canvas { display: block; margin: 0 auto; }
+        @media print {
+            body { padding: 0; background: white; }
+            canvas { margin: 0; }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        function setup() {
+            createCanvas(336, 192); // 3.5" x 2" at 96 DPI
+        }
+        
+        function draw() {
+            background(255);
+            
+            // Draw deposited song (left side)
+            fill(0);
+            textAlign(LEFT, TOP);
+            textSize(12);
+            text("DEPOSITED:", 10, 10);
+            textSize(16);
+            text("pause", 10, 30);
+            textSize(12);
+            text("by eaJ", 10, 50);
+            text("from 1", 10, 65);
+            text("Genre: Unknown", 10, 80);
+            
+            // Draw received song (right side)
+            textAlign(LEFT, TOP);
+            textSize(12);
+            text("RECEIVED:", 168, 10);
+            textSize(16);
+            text("Hush - Still Woozy Remix", 168, 30);
+            textSize(12);
+            text("by The Marías", 168, 50);
+            text("from Hush (Still Woozy Remix)", 168, 65);
+            text("Genre: bedroom pop", 168, 80);
+            
+            // Draw swap icon
+            fill(100);
+            ellipse(168, 120, 20, 20);
+            textAlign(CENTER, CENTER);
+            text("⇄", 168, 120);
+            
+            // Footer
+            textAlign(CENTER, BOTTOM);
+            textSize(10);
+            text("Swapped at repete.art", 168, 180);
+            
+            // Auto print after a short delay
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        }
+    </script>
+</body>
+</html>

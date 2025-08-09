@@ -15,10 +15,11 @@ const RePetePage = lazy(() => import("./Pages/RePetePage"))
 const ArtPage = lazy(() => import("./Pages/ArtPage"))
 const ConnectPage = lazy(() => import("./Pages/ConnectPage"))
 const SketchGallery = lazy(() => import("./Pages/SketchGallery"))
+const SongSwapPage = lazy(() => import("./Pages/SongSwapPage"))
 
 function App() {
   const location = useLocation();
-  const isSketchPage = location.pathname.startsWith('/sketches/');
+  const isSketchPage = location.pathname.startsWith('/sketches/') || location.pathname.startsWith('/gallery/');
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
@@ -34,6 +35,8 @@ function App() {
         <Route path="/art/:pieceId" element={<ArtPiecePage />} />
         <Route path="/sketches" element={<SketchGallery />} />
         <Route path="/sketches/:sketchName" element={<SketchPage />} />
+        <Route path="/callback" element={<SongSwapPage />} />
+        <Route path="/gallery/song-swap" element={<SongSwapPage />} />
       </Routes>
       {!isSketchPage && <Footer />}
     </Suspense>

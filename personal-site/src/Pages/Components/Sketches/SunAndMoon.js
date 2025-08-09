@@ -70,6 +70,7 @@ const SunAndMoon = (p) => {
 
   let canvasWidth = 0;
   let canvasHeight = 0;
+  let minWidthHeight = 0;
 
   p.setup = () => {
     // Randomly select a moon phase
@@ -85,9 +86,10 @@ const SunAndMoon = (p) => {
 
     canvasWidth = p.windowWidth * 1.0;
     canvasHeight = p.windowHeight * 1.0;
-    padding = canvasWidth * 0.075;
-    fontSizeText = canvasWidth * 0.037;
-    fontSizeDescription = canvasWidth * 0.06; // Will continue to be adjusted as we test
+    minWidthHeight = Math.min(canvasWidth, canvasHeight);
+    padding = minWidthHeight * 0.075;
+    fontSizeText = minWidthHeight * 0.037;
+    fontSizeDescription = minWidthHeight * 0.06; // Will continue to be adjusted as we test
     lineHeightText = fontSizeText * 1.5;
     lineHeightDescription = fontSizeDescription * 1.5;
 

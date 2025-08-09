@@ -1,699 +1,342 @@
-import React, { useRef, useMemo, useEffect, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Environment, useTexture, Sparkles } from '@react-three/drei';
-import * as THREE from 'three';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import { KernelSize } from 'postprocessing';
-import * as magic from "@indistinguishable-from-magic/magic-js";
+import * as magic from "@indistinguishable-from-magic/magic-js"
 
-// IMPORTANT: Rename this function to match the filename PascalCase
-const Atmosphere = () => {
-  let isDevMode = true; 
+const Atmosphere = (p) => {
   let isMagic = false;
-  
-  // --- Sketch-specific variables and setup ---
-  // Add any variables your sketch needs here
-  
-  // Print mode variables
-  let isPrintMode = false;
-  let printWidth = 1275;  // 4.25" at 300 DPI
-  let printHeight = 1650; // 5.5" at 300 DPI
-  let originalWidth, originalHeight;
+  let lightValue = 0;
+  let noiseTexture;
+  let currentPhase = 'Sun';
+  let transitionProgress = 0;
+  let targetColors = null;
+  let currentColors = null;
 
-  // Palette variables
-  let paletteIndex = 0;
-  let colors = [];
-  let currentPalette;
-  
-  // Extended palette structure
-  const palettes = {
-    sunset: {"Melon":"ffa69e","Eggshell":"faf3dd","Celeste":"b8f2e6","Light blue":"aed9e0","Payne's gray":"5e6472"},
-    forest: {"Forest Green":"2c5530","Sage":"7d9b76","Cream":"f7e1d7","Moss":"4a5759","Deep Green":"053225"},
-    ocean: {"Deep Blue":"003b4f","Turquoise":"38a2ac","Aqua":"7cd7d7","Sky":"b4e7e7","Sand":"fff1d9"},
-    desert: {"Terracotta":"cd5f34","Sand":"e6c79c","Dusty Rose":"d4a5a5","Sage":"9cae9c","Brown":"6e4c4b"},
-    berry: {"Purple":"4a1942","Magenta":"893168","Pink":"c4547d","Light Pink":"e8a1b3","Cream":"ead7d7"},
-    nordic: {"Frost":"e5e9f0","Polar":"eceff4","Arctic":"d8dee9","Glacier":"4c566a","Night":"2e3440"},
-    autumn: {"Rust":"d35400","Amber":"f39c12","Gold":"f1c40f","Crimson":"c0392b","Burgundy":"7b241c"},
-    spring: {"Blossom":"ffb6c1","Mint":"98ff98","Lavender":"e6e6fa","Peach":"ffdab9","Sage":"9cae9c"},
-    sunset2: {"Coral":"ff7f50","Peach":"ffdab9","Lavender":"e6e6fa","Sky":"87ceeb","Night":"191970"},
-    neon: {"Pink":"ff69b4","Cyan":"00ffff","Yellow":"ffff00","Purple":"9370db","Green":"32cd32"},
-    pastel: {"Mint":"98ff98","Lavender":"e6e6fa","Peach":"ffdab9","Sky":"87ceeb","Rose":"ffb6c1"},
-    jewel: {"Ruby":"e0115f","Sapphire":"0f52ba","Emerald":"50c878","Amethyst":"9966cc","Topaz":"ffc87c"},
-    retro: {"Teal":"008080","Coral":"ff7f50","Mustard":"ffdb58","Mint":"98ff98","Lavender":"e6e6fa"},
-    vintage: {"Sepia":"704214","Cream":"fffdd0","Sage":"9cae9c","Dusty Rose":"d4a5a5","Brown":"6e4c4b"},
-    modern: {"Slate":"708090","Silver":"c0c0c0","Gray":"808080","Charcoal":"36454f","Black":"000000"},
-    cyberpunk: {"Hot Pink":"ff007f","Electric Blue":"00eaff","Neon Yellow":"fff700","Deep Purple":"2d0036","Black":"0a0a0a"},
-    noir: {"Jet":"343434","Charcoal":"232323","Ash":"bdbdbd","Ivory":"f6f6f6","Blood Red":"c3073f"},
-    midnight: {"Midnight Blue":"191970","Deep Navy":"0a0a40","Steel":"7b8fa1","Moonlight":"e5e5e5","Violet":"8f00ff"},
-    vaporwave: {"Vapor Pink":"ff71ce","Vapor Blue":"01cdfe","Vapor Purple":"b967ff","Vapor Yellow":"fffaa8","Vapor Black":"323232"},
-    synthwave: {"Synth Pink":"ff3caa","Synth Blue":"29ffe3","Synth Orange":"ffb300","Synth Purple":"7c3cff","Synth Black":"1a1a2e"}
+  // Atmosphere-specific color palettes
+  const atmospherePalettes = {
+    'Sunset': ['#FF6B35', '#FF9F1C', '#FFD700', '#FF6B35'], // Warm sunset gradient
+    'Ocean': ['#003B4F', '#38A2AC', '#7CD7D7', '#003B4F'], // Deep ocean blues
+    'Forest': ['#2C5530', '#7D9B76', '#F7E1D7', '#2C5530'], // Forest greens
+    'Desert': ['#CD5F34', '#E6C79C', '#D4A5A5', '#CD5F34'], // Desert earth tones
+    'Berry': ['#4A1942', '#893168', '#C4547D', '#4A1942'], // Rich berry colors
+    'Nordic': ['#E5E9F0', '#ECEEF4', '#D8DEE9', '#E5E9F0'], // Cool nordic tones
+    'Autumn': ['#D35400', '#F39C12', '#F1C40F', '#D35400'], // Autumn warm colors
+    'Spring': ['#FFB6C1', '#98FF98', '#E6E6FA', '#FFB6C1'], // Spring pastels
+    'Neon': ['#FF69B4', '#00FFFF', '#FFFF00', '#FF69B4'], // Bright neon colors
+    'Jewel': ['#E0115F', '#0F52BA', '#50C878', '#E0115F'], // Rich jewel tones
+    'Cyberpunk': ['#FF007F', '#00EAFF', '#FFF700', '#FF007F'], // Cyberpunk neon
+    'Vaporwave': ['#FF71CE', '#01CDFE', '#B967FF', '#FF71CE'], // Vaporwave aesthetic
+    'Synthwave': ['#FF3CAA', '#29FFE3', '#FFB300', '#FF3CAA'] // Synthwave colors
   };
 
-  // Helper function to select palette by index
-  const selectPaletteByIndex = (index) => {
-    const paletteNames = Object.keys(palettes);
-    // Ensure index stays within bounds
-    if (index < 0) index = paletteNames.length - 1;
-    if (index >= paletteNames.length) index = 0;
+  let allDark = true;
+  let darkBg = '#000000';
+
+  let lastWasDark = false;
+  let sizeMultiplier = 0;
+
+  let padding = 0;
+  let fontSizeDescription = 0;
+  let fontSizeText = 0;
+  let textPadding = 0;
+  let lineHeightText = 0;
+  let lineHeightDescription = 0;
+  let logoSize = 0;
+
+  let bgColor = "#2F5DA9";
+  let textColor = "#fffdf3";
+
+  let selectedAtmosphereColors = null;
+  let selectedAtmosphere = null;
+
+  let isDevMode = true;
+  let time = 0;
+
+  let lightGraphic;
+  let darkGraphic;
+
+  let canvasWidth = 0;
+  let canvasHeight = 0;
+
+  // Debug variables
+  let debugMode = false;
+  let showPaletteName = false;
+  let rotationSpeed = 0.5;
+  let bloomIntensity = 1.0;
+  let particleCount = 5;
+  let particleSpeed = 1.0;
+  let ringCount = 3;
+  let ringRotationSpeed = 0.3;
+
+  p.setup = () => {
+    // Randomly select an atmosphere palette
+    const atmosphereNames = Object.keys(atmospherePalettes);
+    selectedAtmosphere = atmosphereNames[Math.floor(Math.random() * atmosphereNames.length)];
+    selectedAtmosphereColors = atmospherePalettes[selectedAtmosphere];
     
-    const paletteName = paletteNames[index];
-    const palette = palettes[paletteName];
-    const paletteColors = Object.values(palette).map(c => c.startsWith('#') ? c : `#${c}`);
-    return { paletteName, paletteColors, paletteIndex: index };
+    // Create multiple color sets for complex effects
+    atmosphereColors1 = atmospherePalettes[atmosphereNames[Math.floor(Math.random() * atmosphereNames.length)]];
+    atmosphereColors2 = atmospherePalettes[atmosphereNames[Math.floor(Math.random() * atmosphereNames.length)]];
+    atmosphereColors3 = atmospherePalettes[atmosphereNames[Math.floor(Math.random() * atmosphereNames.length)]];
+
+    p.pixelDensity(1);
+
+    canvasWidth = p.windowWidth * 1.0;
+    canvasHeight = p.windowHeight * 1.0;
+    padding = canvasWidth * 0.075;
+    fontSizeText = canvasWidth * 0.037;
+    fontSizeDescription = canvasWidth * 0.06;
+    lineHeightText = fontSizeText * 1.5;
+    lineHeightDescription = fontSizeDescription * 1.5;
+
+    p.createCanvas(canvasWidth, canvasHeight);
+
+    p.textAlign(p.CENTER, p.CENTER);
+    p.imageMode(p.CENTER);
+    p.background(bgColor);
+    let seed = Math.floor(Math.random() * 1000);
+    p.randomSeed(seed);
+    p.noiseSeed(seed);
+
+    darkGraphic = p.createGraphics(p.width, p.height);
+    darkGraphic.background(bgColor);
+    darkGraphic.translate(p.width * 0.5, p.height * 0.5);
+    darkGraphic.scale(atmosphereScale);
+    p.drawAtmosphere('Empty');
   };
 
-  // Helper function to select and shuffle palette
-  const selectRandomPalette = () => {
-    const paletteNames = Object.keys(palettes);
-    const randomIndex = Math.floor(Math.random() * paletteNames.length);
-    return selectPaletteByIndex(randomIndex);
-  };
+  let atmosphereScale = 2;
+  let currentAtmospherePhase = 'Sun';
+  let lastPeakReached = false;
+  let atmosphereColors1;
+  let atmosphereColors2;
+  let atmosphereColors3;
 
-  // Debug sliders component
-  function DebugSliders({ 
-    showPaletteName, setShowPaletteName,
-    currentPaletteName,
-    onPaletteChange,
-    rotationSpeed, setRotationSpeed,
-    sphereScale, setSphereScale,
-    bloomIntensity, setBloomIntensity,
-    bloomLuminanceThreshold, setBloomLuminanceThreshold,
-    bloomLuminanceSmoothing, setBloomLuminanceSmoothing,
-    bloomKernelSize, setBloomKernelSize,
-    bloomMipmapBlur, setBloomMipmapBlur,
-    sphereColor, setSphereColor,
-    fresnelPower, setFresnelPower,
-    fresnelStrength, setFresnelStrength,
-    particleCount, setParticleCount,
-    particleSpeed, setParticleSpeed,
-    ringCount, setRingCount,
-    ringRotationSpeed, setRingRotationSpeed,
-    isVisible, setIsVisible
-  }) {
-    // Debug: Track when component re-renders
-    useEffect(() => {
-      console.log('DebugSliders re-rendered, isVisible:', isVisible);
-    });
+  p.draw = () => {
+    p.background(bgColor);
 
-    // Helper function to prevent event propagation
-    const handleEvent = (e, callback) => {
-      e.stopPropagation();
-      if (callback) callback(e);
-    };
-
-    if (!isVisible) {
-      return (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            console.log('Debug menu opening');
-            setIsVisible(true);
-          }}
-          style={{ pointerEvents: 'auto' }}
-          className="absolute bottom-4 right-4 z-[9999] bg-black/50 text-white px-3 py-1 rounded text-sm border border-white/20"
-        >
-          Debug Mode
-        </button>
-      );
+    let t = 0;
+    if (isDevMode) {
+      t = (Math.sin(p.frameCount * 0.01) + 1) / 2;
+    } else if (isMagic && magic.modules.light) {
+      let currentReading = 1 - (magic.modules.light.brightness / 4095);
+      lightValue = (lightValue * 0.9) + (currentReading * 0.1);
+      t = lightValue;
     }
 
-    return (
-      <div 
-        className="absolute bottom-4 right-4 z-[9999] bg-black/80 backdrop-blur-sm p-4 rounded-lg border border-white/20 text-white text-sm min-w-[250px] max-h-[80vh] overflow-y-auto"
-        style={{ pointerEvents: 'auto' }}
-        onClick={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-        onMouseUp={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-between items-center mb-3">
-          <span className="font-bold">Atmosphere Debug</span>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              console.log('Debug menu closing manually');
-              setIsVisible(false);
-            }}
-            className="text-white/60 hover:text-white"
-          >
-            ×
-          </button>
-        </div>
-        
-        <div className="space-y-3">
-          {/* Test Button */}
-          <div className="pt-2 border-t border-white/20">
-            <h4 className="font-bold text-sm mb-2">🧪 Test</h4>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log('Test button clicked - menu should stay open');
-              }}
-              className="w-full bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors"
-            >
-              Test Button (Check Console)
-            </button>
-          </div>
+    let eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    let graphicOpacity = eased * 255;
 
-          {/* Palette Controls */}
-          <div className="pt-2 border-t border-white/20">
-            <h4 className="font-bold text-sm mb-2">🎨 Palette</h4>
-            <div className="space-y-2">
-              <div>
-                <label className="block mb-1 text-xs">Show Palette Name</label>
-                <input
-                  type="checkbox"
-                  checked={showPaletteName}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    setShowPaletteName(e.target.checked);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="mr-2"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs">Current: {currentPaletteName}</label>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPaletteChange();
-                  }}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors"
-                >
-                  Change Palette
-                </button>
-              </div>
-            </div>
-          </div>
+    if (eased > 0.99 && !lastPeakReached) {
+      const atmosphereNames = Object.keys(atmospherePalettes).filter(name => name !== currentAtmospherePhase);
+      currentAtmospherePhase = atmosphereNames[Math.floor(Math.random() * atmosphereNames.length)];
+      selectedAtmosphereColors = atmospherePalettes[currentAtmospherePhase];
+      selectedAtmosphereColors.sort(() => Math.random() - 0.5);
 
-          {/* Sphere Controls */}
-          <div className="pt-2 border-t border-white/20">
-            <h4 className="font-bold text-sm mb-2">🌍 Sphere</h4>
-            <div className="space-y-2">
-              <div>
-                <label className="block mb-1 text-xs">Rotation Speed: {(rotationSpeed || 0).toFixed(2)}</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="2"
-                  step="0.01"
-                  value={rotationSpeed || 0}
-                  onChange={(e) => handleEvent(e, () => setRotationSpeed(parseFloat(e.target.value)))}
-                  onMouseDown={(e) => handleEvent(e)}
-                  onMouseUp={(e) => handleEvent(e)}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs">Scale: {(sphereScale || 1).toFixed(2)}</label>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="3"
-                  step="0.1"
-                  value={sphereScale || 1}
-                  onChange={(e) => setSphereScale(parseFloat(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs">Sphere Color</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={sphereColor || '#ffa69e'}
-                    onChange={(e) => setSphereColor(e.target.value)}
-                    className="w-8 h-8 rounded border border-white/20 cursor-pointer"
-                  />
-                  <span className="text-xs text-white/70">{sphereColor || '#ffa69e'}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+      atmosphereColors1 = atmospherePalettes[atmosphereNames[Math.floor(Math.random() * atmosphereNames.length)]];
+      atmosphereColors2 = atmospherePalettes[atmosphereNames[Math.floor(Math.random() * atmosphereNames.length)]];
+      atmosphereColors3 = atmospherePalettes[atmosphereNames[Math.floor(Math.random() * atmosphereNames.length)]];
 
-          {/* Fresnel Controls */}
-          <div className="pt-2 border-t border-white/20">
-            <h4 className="font-bold text-sm mb-2">✨ Fresnel Effect</h4>
-            <div className="space-y-2">
-              <div>
-                <label className="block mb-1 text-xs">Fresnel Power: {(fresnelPower || 2).toFixed(2)}</label>
-                <input
-                  type="range"
-                  min="0.1"
-                  max="5"
-                  step="0.1"
-                  value={fresnelPower || 2}
-                  onChange={(e) => setFresnelPower(parseFloat(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs">Fresnel Strength: {(fresnelStrength || 3).toFixed(2)}</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="10"
-                  step="0.1"
-                  value={fresnelStrength || 3}
-                  onChange={(e) => setFresnelStrength(parseFloat(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </div>
+      lastPeakReached = true;
+    } else if (eased < 0.9) {
+      lastPeakReached = false;
+    }
 
-          {/* Bloom Controls */}
-          <div className="pt-2 border-t border-white/20">
-            <h4 className="font-bold text-sm mb-2">🌟 Bloom</h4>
-            <div className="space-y-2">
-              <div>
-                <label className="block mb-1 text-xs">Bloom Intensity: {(bloomIntensity || 1).toFixed(2)}</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="5"
-                  step="0.1"
-                  value={bloomIntensity || 1}
-                  onChange={(e) => setBloomIntensity(parseFloat(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs">Luminance Threshold: {(bloomLuminanceThreshold || 0.1).toFixed(2)}</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={bloomLuminanceThreshold || 0.1}
-                  onChange={(e) => setBloomLuminanceThreshold(parseFloat(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs">Luminance Smoothing: {(bloomLuminanceSmoothing || 0.9).toFixed(2)}</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={bloomLuminanceSmoothing || 0.9}
-                  onChange={(e) => setBloomLuminanceSmoothing(parseFloat(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs">Kernel Size: {(() => {
-                  switch (bloomKernelSize) {
-                    case KernelSize.SMALL: return 'SMALL';
-                    case KernelSize.MEDIUM: return 'MEDIUM';
-                    case KernelSize.LARGE: return 'LARGE';
-                    case KernelSize.HUGE: return 'HUGE';
-                    case KernelSize.VERY_HUGE: return 'VERY_HUGE';
-                    default: return bloomKernelSize;
-                  }
-                })()}</label>
-                <input
-                  type="range"
-                  min={KernelSize.SMALL}
-                  max={KernelSize.VERY_HUGE}
-                  step={1}
-                  value={bloomKernelSize}
-                  onChange={e => setBloomKernelSize(Number(e.target.value))}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-white/60 mt-1">
-                  <span>Small</span>
-                  <span>Medium</span>
-                  <span>Large</span>
-                  <span>Huge</span>
-                  <span>Very Huge</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={bloomMipmapBlur || true}
-                  onChange={e => setBloomMipmapBlur(e.target.checked)}
-                  id="mipmapBlurToggle"
-                />
-                <label htmlFor="mipmapBlurToggle" className="text-xs">Mipmap Blur</label>
-              </div>
-            </div>
-          </div>
+    // Draw Light Graphic
+    p.push();
+    selectedAtmosphere = 'Sun';
+    p.translate(p.width * 0.5, p.height * 0.5);
+    p.scale(atmosphereScale);
+    p.drawAtmosphere('Sun');
+    p.pop();
 
-          {/* Particle Controls */}
-          <div className="pt-2 border-t border-white/20">
-            <h4 className="font-bold text-sm mb-2">✨ Particles</h4>
-            <div className="space-y-2">
-              <div>
-                <label className="block mb-1 text-xs">Particle Count: {particleCount || 5}</label>
-                <input
-                  type="range"
-                  min="1"
-                  max="20"
-                  step="1"
-                  value={particleCount || 5}
-                  onChange={(e) => setParticleCount(parseInt(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs">Particle Speed: {(particleSpeed || 1).toFixed(2)}</label>
-                <input
-                  type="range"
-                  min="0.1"
-                  max="3"
-                  step="0.1"
-                  value={particleSpeed || 1}
-                  onChange={(e) => setParticleSpeed(parseFloat(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </div>
+    p.push();
+    p.tint(255, graphicOpacity);
+    p.image(darkGraphic, p.width * 0.5, p.height * 0.5);
+    p.pop();
 
-          {/* Ring Controls */}
-          <div className="pt-2 border-t border-white/20">
-            <h4 className="font-bold text-sm mb-2">💫 Rings</h4>
-            <div className="space-y-2">
-              <div>
-                <label className="block mb-1 text-xs">Ring Count: {ringCount || 3}</label>
-                <input
-                  type="range"
-                  min="1"
-                  max="8"
-                  step="1"
-                  value={ringCount || 3}
-                  onChange={(e) => setRingCount(parseInt(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs">Ring Rotation Speed: {(ringRotationSpeed || 0.3).toFixed(2)}</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="2"
-                  step="0.01"
-                  value={ringRotationSpeed || 0.3}
-                  onChange={(e) => setRingRotationSpeed(parseFloat(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Main 3D scene component
-  function Scene({ 
-    currentColors, 
-    onCanvasClick, 
-    rotationSpeed = 0.5,
-    sphereScale = 1.0,
-    sphereColor,
-    fresnelPower = 2.0,
-    fresnelStrength = 3.0,
-    particleCount = 5,
-    particleSpeed = 1.0,
-    ringCount = 3,
-    ringRotationSpeed = 0.3
-  }) {
-    const meshRef = useRef();
-    const groupRef = useRef();
-    const ringsRef = useRef();
-
-    // Create fresnel material for the sphere
-    const fresnelMaterial = useMemo(() => new THREE.ShaderMaterial({
-      uniforms: {
-        color: { value: new THREE.Color(sphereColor || currentColors[0] || '#ffa69e') },
-        fresnelPower: { value: fresnelPower },
-        fresnelStrength: { value: fresnelStrength },
-      },
-      vertexShader: `
-        precision mediump float;
-        precision mediump int;
-        
-        varying vec3 vNormal;
-        varying vec3 vViewDirection;
-        
-        void main() {
-          vNormal = normalize(normalMatrix * normal);
-          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-          vec4 viewPosition = viewMatrix * worldPosition;
-          vViewDirection = normalize(-viewPosition.xyz);
-          gl_Position = projectionMatrix * viewPosition;
-        }
-      `,
-      fragmentShader: `
-        precision mediump float;
-        precision mediump int;
-        
-        uniform vec3 color;
-        uniform float fresnelPower;
-        uniform float fresnelStrength;
-        varying vec3 vNormal;
-        varying vec3 vViewDirection;
-        
-        void main() {
-          float fresnel = pow(1.0 - abs(dot(vNormal, vViewDirection)), fresnelPower);
-          float rim = clamp(fresnel * fresnelStrength, 0.0, 1.0);
-          vec3 finalColor = mix(color, vec3(1.0), rim * 0.5);
-          float alpha = mix(0.3, 1.0, rim);
-          gl_FragColor = vec4(finalColor, alpha);
-        }
-      `,
-      transparent: true,
-      depthWrite: true,
-    }), [sphereColor, currentColors, fresnelPower, fresnelStrength]);
-
-    // Animate the atmospheric elements
-    useFrame((state, delta) => {
-      // Rotate the main sphere
-      if (meshRef.current) {
-        meshRef.current.rotation.y += delta * rotationSpeed;
-        meshRef.current.rotation.x += delta * rotationSpeed * 0.5;
-      }
-
-      // Rotate the particle group
-      if (groupRef.current) {
-        groupRef.current.rotation.y += delta * particleSpeed * 0.2;
-        groupRef.current.rotation.x += delta * particleSpeed * 0.1;
-      }
-
-      // Rotate the rings
-      if (ringsRef.current) {
-        ringsRef.current.rotation.y += delta * ringRotationSpeed;
-        ringsRef.current.rotation.z += delta * ringRotationSpeed * 0.3;
-      }
-    });
-
-    return (
-      <>
-        {/* Main rotating sphere with fresnel effect */}
-        <mesh ref={meshRef} onClick={onCanvasClick} scale={sphereScale}>
-          <sphereGeometry args={[3, 64, 64]} />
-          <primitive object={fresnelMaterial} />
-        </mesh>
-
-        {/* Floating atmospheric particles */}
-        <group ref={groupRef}>
-          {currentColors.slice(1, Math.min(particleCount + 1, currentColors.length)).map((color, index) => (
-            <mesh 
-              key={index}
-              position={[
-                Math.sin(Date.now() * 0.001 * particleSpeed + index * 0.5) * 4,
-                Math.cos(Date.now() * 0.002 * particleSpeed + index * 0.3) * 3,
-                Math.sin(Date.now() * 0.003 * particleSpeed + index * 0.7) * 4
-              ]}
-            >
-              <sphereGeometry args={[0.2 + Math.sin(Date.now() * 0.01 * particleSpeed + index) * 0.1, 16, 16]} />
-              <meshStandardMaterial 
-                color={color} 
-                metalness={0.1}
-                roughness={0.3}
-                transparent={true}
-                opacity={0.7}
-              />
-            </mesh>
-          ))}
-        </group>
-
-        {/* Atmospheric rings */}
-        <group ref={ringsRef}>
-          {currentColors.slice(0, Math.min(ringCount, currentColors.length)).map((color, index) => (
-            <mesh 
-              key={`ring-${index}`}
-              rotation={[Math.PI / 2, 0, index * Math.PI / 3]}
-            >
-              <ringGeometry args={[2 + index * 0.5, 2.2 + index * 0.5, 32]} />
-              <meshStandardMaterial 
-                color={color} 
-                metalness={0.2}
-                roughness={0.5}
-                transparent={true}
-                opacity={0.4}
-                side={THREE.DoubleSide}
-              />
-            </mesh>
-          ))}
-        </group>
-
-        {/* Lighting */}
-        <ambientLight intensity={0.6} />
-        <pointLight position={[10, 10, 10]} intensity={0.8} color={currentColors[0] || '#ffa69e'} />
-        <pointLight position={[-10, -10, -10]} intensity={0.4} color={currentColors[1] || '#faf3dd'} />
-
-        {/* Environment */}
-        <Environment preset="sunset" />
-      </>
-    );
-  }
-
-  // State for the main component
-  const [showPaletteName, setShowPaletteName] = useState(false);
-  const [currentPaletteName, setCurrentPaletteName] = useState('sunset');
-  const [currentColors, setCurrentColors] = useState([]);
-
-  // Debug control states
-  const [rotationSpeed, setRotationSpeed] = useState(0.5);
-  const [sphereScale, setSphereScale] = useState(1.0);
-  const [bloomIntensity, setBloomIntensity] = useState(1.0);
-  const [bloomLuminanceThreshold, setBloomLuminanceThreshold] = useState(0.1);
-  const [bloomLuminanceSmoothing, setBloomLuminanceSmoothing] = useState(0.9);
-  const [bloomKernelSize, setBloomKernelSize] = useState(KernelSize.MEDIUM);
-  const [bloomMipmapBlur, setBloomMipmapBlur] = useState(true);
-  const [sphereColor, setSphereColor] = useState('#ffa69e');
-  const [fresnelPower, setFresnelPower] = useState(2.0);
-  const [fresnelStrength, setFresnelStrength] = useState(3.0);
-  const [particleCount, setParticleCount] = useState(5);
-  const [particleSpeed, setParticleSpeed] = useState(1.0);
-  const [ringCount, setRingCount] = useState(3);
-  const [ringRotationSpeed, setRingRotationSpeed] = useState(0.3);
-  const [debugMenuVisible, setDebugMenuVisible] = useState(false);
-
-  // Initialize with a random palette
-  useEffect(() => {
-    const { paletteName, paletteColors } = selectRandomPalette();
-    setCurrentPaletteName(paletteName);
-    setCurrentColors(paletteColors);
-    setSphereColor(paletteColors[0] || '#ffa69e');
-  }, []);
-
-  const handlePaletteChange = () => {
-    const { paletteName, paletteColors } = selectRandomPalette();
-    setCurrentPaletteName(paletteName);
-    setCurrentColors(paletteColors);
-    setSphereColor(paletteColors[0] || '#ffa69e');
+    // Draw debug UI if enabled
+    if (debugMode) {
+      p.drawDebugUI();
+    }
   };
 
-  // Handle magic connection on click
-  const handleCanvasClick = async () => {
+  p.ease = (t) => {
+    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  };
+
+  p.mousePressed = async () => {
     if (isDevMode) {
       isDevMode = false;
       if (!isMagic) {
-        try {
-          await magic.connect({ mesh: false, auto: true });
-          console.log("Magic connected. Modules:", magic.modules);
-          isMagic = true;
-        } catch (error) {
-          console.error("Failed to connect magic:", error);
-          isDevMode = true;
-          return;
-        }
+        magic.connect({ mesh: false, auto: true });
+        console.log(magic.modules);
+        isMagic = true;
       }
     } else {
-      console.log("3D Sketch interaction click.");
+      isDevMode = true;
+    }
+    p.loop();
+  };
+
+  p.drawAtmosphere = (phase) => {
+    let diameter = p.width - 2 * padding;
+    let radius = diameter / 2;
+
+    p.translate(0, radius / 2);
+    if (phase !== 'Empty') {
+      // Background gradient
+      p.push();
+      p.translate(0, -radius);
+      let backgroundGradient = p.drawingContext.createLinearGradient(0, p.height, p.width, 0);
+      backgroundGradient.addColorStop(0, p.color(selectedAtmosphereColors[0] || '#FFFFFF'));
+      backgroundGradient.addColorStop(0.3, p.color(selectedAtmosphereColors[1] || selectedAtmosphereColors[0] || '#FFFFFF'));
+      backgroundGradient.addColorStop(0.6, p.color(selectedAtmosphereColors[2] || selectedAtmosphereColors[1] || '#FFFFFF'));
+      backgroundGradient.addColorStop(1.0, p.color(selectedAtmosphereColors[3] || selectedAtmosphereColors[0] || '#FFFFFF'));
+
+      p.drawingContext.fillStyle = backgroundGradient;
+      p.noStroke();
+      p.rect(-p.width / 2, -p.height / 2, p.width, p.height);
+      p.pop();
+
+      // Draw atmospheric sphere with enhanced effects
+      p.push();
+      
+      // Create rotating gradient
+      const rotateGradient = (angle) => {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const cx = 0;
+        const cy = -radius / 2;
+        const length = radius / 2 + padding;
+
+        return [
+          cx - length * cos, cy - length * sin,
+          cx + length * cos, cy + length * sin
+        ];
+      };
+
+      const generateConstrainedAngle = () => {
+        let noiseVal = p.noise(p.frameCount * 0.001);
+        let angle = p.map(noiseVal, 0, 1, -p.PI, p.PI);
+        let wobble = p.noise(p.frameCount * 0.001, 100) * 0.2;
+        return angle + wobble;
+      };
+
+      const randomAngle = generateConstrainedAngle();
+      const [x1, y1, x2, y2] = rotateGradient(randomAngle);
+
+      let atmosphereGradient = p.drawingContext.createLinearGradient(x1, y1, x2, y2);
+      atmosphereGradient.addColorStop(0, p.color(selectedAtmosphereColors[0] || '#FFFFFF'));
+      atmosphereGradient.addColorStop(0.33, p.color(selectedAtmosphereColors[1] || selectedAtmosphereColors[0] || '#FFFFFF'));
+      atmosphereGradient.addColorStop(0.66, p.color(selectedAtmosphereColors[2] || selectedAtmosphereColors[1] || '#FFFFFF'));
+      atmosphereGradient.addColorStop(1.0, p.color(selectedAtmosphereColors[3] || selectedAtmosphereColors[0] || '#FFFFFF'));
+
+      if (allDark) {
+        p.fill(bgColor);
+        p.drawingContext.fillStyle = atmosphereGradient;
+
+        // Multiple shadow layers for atmospheric effect
+        p.drawingContext.shadowBlur = radius / 5;
+        p.drawingContext.shadowColor = p.color(selectedAtmosphereColors[1] + "88");
+        p.drawingContext.shadowOffsetX = radius / 20;
+        p.drawingContext.shadowOffsetY = radius / 20;
+        p.ellipse(0, -radius / 2, radius, radius);
+
+        p.drawingContext.shadowBlur = radius / 5;
+        p.drawingContext.shadowColor = p.color(selectedAtmosphereColors[1] + "88");
+        p.drawingContext.shadowOffsetX = -radius / 20;
+        p.drawingContext.shadowOffsetY = -radius / 20;
+        p.ellipse(0, -radius / 2, radius, radius);
+
+        p.drawingContext.shadowBlur = radius / 5;
+        p.drawingContext.shadowColor = p.color(selectedAtmosphereColors[2] + "88");
+        p.drawingContext.shadowOffsetX = radius / 20;
+        p.drawingContext.shadowOffsetY = -radius / 20;
+        p.ellipse(0, -radius / 2, radius, radius);
+
+        p.drawingContext.shadowBlur = radius / 5;
+        p.drawingContext.shadowColor = p.color(selectedAtmosphereColors[3] + "88");
+        p.drawingContext.shadowOffsetX = -radius / 20;
+        p.drawingContext.shadowOffsetY = radius / 20;
+        p.ellipse(0, -radius / 2, radius, radius);
+      } else {
+        p.noFill();
+        p.drawingContext.shadowBlur = padding / 2;
+        p.drawingContext.shadowColor = 'rgba(0, 0, 0, 0.25)';
+        p.ellipse(0, -radius / 2, radius, radius);
+      }
+
+      p.pop();
+    } else {
+      // Dark mode
+      darkGraphic.push();
+      darkGraphic.translate(0, radius / 2);
+      darkGraphic.noFill();
+      if (allDark) {
+        darkGraphic.background(darkBg);
+      } else {
+        darkGraphic.background(bgColor);
+      }
+      darkGraphic.stroke(textColor);
+      darkGraphic.strokeWeight(1);
+      darkGraphic.ellipse(0, -radius / 2, radius, radius);
+
+      if (!allDark) {
+        darkGraphic.stroke(textColor + "08");
+        let blueprintColumns = 50;
+        let squareSize = p.width / blueprintColumns;
+        let blueprintRows = Math.round(p.height / squareSize) + 1;
+
+        darkGraphic.push();
+        darkGraphic.translate(-p.width / 2, -p.height / 2);
+        for (let i = 0; i < blueprintRows; i++) {
+          darkGraphic.line(0, i * squareSize, p.width, i * squareSize);
+        }
+
+        for (let i = 0; i < blueprintColumns; i++) {
+          darkGraphic.line(-squareSize / 2 + i * squareSize, 0, -squareSize / 2 + i * squareSize, p.height);
+        }
+        darkGraphic.pop();
+
+        darkGraphic.stroke(textColor + "22");
+        darkGraphic.rectMode(p.CENTER);
+        darkGraphic.rect(0, -radius / 2, radius, radius);
+      }
+      darkGraphic.pop();
     }
   };
 
-  return (
-    <>
-      <div style={{ width: '100vw', height: '100vh', position: 'absolute', top: 0, left: 0 }}>
-        <Canvas
-          camera={{ position: [0, 0, 5], fov: 75 }}
-          style={{ width: '100vw', height: '100vh', display: 'block' }}
-          gl={{ 
-            alpha: true, 
-            antialias: true,
-            powerPreference: 'default'
-          }}
-        >
-          <Scene 
-            currentColors={currentColors} 
-            onCanvasClick={handleCanvasClick}
-            rotationSpeed={rotationSpeed}
-            sphereScale={sphereScale}
-            sphereColor={sphereColor}
-            fresnelPower={fresnelPower}
-            fresnelStrength={fresnelStrength}
-            particleCount={particleCount}
-            particleSpeed={particleSpeed}
-            ringCount={ringCount}
-            ringRotationSpeed={ringRotationSpeed}
-          />
-          <EffectComposer>
-            <Bloom
-              intensity={bloomIntensity}
-              luminanceThreshold={bloomLuminanceThreshold}
-              luminanceSmoothing={bloomLuminanceSmoothing}
-              kernelSize={bloomKernelSize}
-              mipmapBlur={bloomMipmapBlur}
-            />
-          </EffectComposer>
-        </Canvas>
+  p.drawDebugUI = () => {
+    p.push();
+    p.fill(0, 0, 0, 200);
+    p.noStroke();
+    p.rect(10, 10, 300, 400);
+    
+    p.fill(255);
+    p.textSize(16);
+    p.textAlign(p.LEFT, p.TOP);
+    p.text('Atmosphere Debug', 20, 20);
+    
+    p.textSize(12);
+    p.text(`Palette: ${selectedAtmosphere}`, 20, 50);
+    p.text(`Rotation Speed: ${rotationSpeed.toFixed(2)}`, 20, 70);
+    p.text(`Scale: ${atmosphereScale.toFixed(2)}`, 20, 90);
+    p.text(`Bloom: ${bloomIntensity.toFixed(2)}`, 20, 110);
+    p.text(`Particles: ${particleCount}`, 20, 120);
+    p.text(`Rings: ${ringCount}`, 20, 140);
+    
+    p.pop();
+  };
 
-        {/* Palette name overlay - Outside Canvas */}
-        {showPaletteName && (
-          <div className="absolute top-4 left-4 bg-white/90 text-black px-3 py-1 rounded text-sm z-10">
-            Palette: {currentPaletteName}
-          </div>
-        )}
-      </div>
+  p.keyPressed = () => {
+    if (p.key === 's') {
+      p.save('atmosphere.png');
+    }
+    if (p.key === 'd') {
+      debugMode = !debugMode;
+    }
+    if (p.key === 'p') {
+      showPaletteName = !showPaletteName;
+    }
+  }
+}
 
-      {/* Debug UI - Completely outside Canvas container */}
-      <DebugSliders
-        showPaletteName={showPaletteName}
-        setShowPaletteName={setShowPaletteName}
-        currentPaletteName={currentPaletteName}
-        onPaletteChange={handlePaletteChange}
-        rotationSpeed={rotationSpeed}
-        setRotationSpeed={setRotationSpeed}
-        sphereScale={sphereScale}
-        setSphereScale={setSphereScale}
-        bloomIntensity={bloomIntensity}
-        setBloomIntensity={setBloomIntensity}
-        bloomLuminanceThreshold={bloomLuminanceThreshold}
-        setBloomLuminanceThreshold={setBloomLuminanceThreshold}
-        bloomLuminanceSmoothing={bloomLuminanceSmoothing}
-        setBloomLuminanceSmoothing={setBloomLuminanceSmoothing}
-        bloomKernelSize={bloomKernelSize}
-        setBloomKernelSize={setBloomKernelSize}
-        bloomMipmapBlur={bloomMipmapBlur}
-        setBloomMipmapBlur={setBloomMipmapBlur}
-        sphereColor={sphereColor}
-        setSphereColor={setSphereColor}
-        fresnelPower={fresnelPower}
-        setFresnelPower={setFresnelPower}
-        fresnelStrength={fresnelStrength}
-        setFresnelStrength={setFresnelStrength}
-        particleCount={particleCount}
-        setParticleCount={setParticleCount}
-        particleSpeed={particleSpeed}
-        setParticleSpeed={setParticleSpeed}
-        ringCount={ringCount}
-        setRingCount={setRingCount}
-        ringRotationSpeed={ringRotationSpeed}
-        setRingRotationSpeed={setRingRotationSpeed}
-        isVisible={debugMenuVisible}
-        setIsVisible={setDebugMenuVisible}
-      />
-    </>
-  );
-};
-
-// IMPORTANT: Rename 'Atmosphere' to match the filename PascalCase
 export default Atmosphere; 

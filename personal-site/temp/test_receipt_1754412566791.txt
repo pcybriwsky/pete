@@ -1,0 +1,57 @@
+
+============================
+ TEST RECEIPT FOR V 1.0 GALLERY
+============================
+
+        August 10, 2025
+
+       🎵 SONG SWAP TEST
+ This is a test print to verify
+the thermal printer is working!
+
+       📤 DEPOSITED SONG:
+        Test Song Title
+         by Test Artist
+        from Test Album
+       Genre: Test Genre
+
+       📥 RECEIVED SONG:
+       Another Test Song
+       by Another Artist
+       from Another Album
+      Genre: Another Genre
+
+================================
+      🎵 TEST COMPLETE! 🎵
+================================
+
+         Date: 8/5/2025
+       Time: 12:49:26 PM
+      Location: repete.art
+
+================================
+    ADDITIONAL TEST CONTENT
+================================
+
+    Testing line spacing and
+    formatting to ensure the
+    receipt looks good when
+   printed on thermal paper.
+
+     This section adds more
+  content to make the receipt
+      longer as requested.
+
+     The receipt should be
+     approximately 3 inches
+       long when printed.
+
+================================
+      END OF TEST RECEIPT
+================================
+
+   Thank you for testing the
+ thermal printer functionality!
+
+================================
+

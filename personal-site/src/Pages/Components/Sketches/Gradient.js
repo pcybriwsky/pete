@@ -28,6 +28,33 @@ const Gradient = (p) => {
   let LERP_FACTOR = 0.1; // Now controlled by slider
   let SIZE_SCALE_FACTOR = 0.1; // Now controlled by slider
 
+  // --- Equation Mode Variables ---
+  let equationType = 'lissajous';
+  let t = 0;
+  let dt = 0.02;
+  const getDefaultEquationParams = () => ({
+    // Lissajous
+    A: 1,
+    B: 1,
+    a: 3,
+    b: 2,
+    delta: Math.PI / 2,
+    // Rose
+    k: 5,
+    R: 1,
+    // Trochoids
+    bigR: 5,
+    smallr: 3,
+    d: 5,
+    // Spiral
+    aSpiral: 0.02,
+    bSpiral: 0.08,
+    // Lemniscate
+    ALem: 1,
+    BLem: 1,
+  });
+  let equationParams = getDefaultEquationParams();
+
   // --- Visual Style Variables ---
   const palettes = {
     sunset: { "Melon": "ffa69e", "Eggshell": "faf3dd", "Celeste": "b8f2e6", "Light blue": "aed9e0", "Payne\'s gray": "5e6472" },
@@ -53,6 +80,9 @@ const Gradient = (p) => {
   // --- GUI Elements ---
   let lerpSlider, scaleSlider, pathSlider, circleSizeSlider;
   let paletteSelect, modeSelect, sizeDistributionSelect, shapeSelect;
+  let equationSelect, equationDtSlider;
+  let equationControlsContainer;
+  const equationParamSliders = {};
   let strokeCheckbox, hollowCheckbox;
   let controlPanel;
   let rawValuesDisplay, targetValuesDisplay;
@@ -72,6 +102,51 @@ const Gradient = (p) => {
         sec.content.style('display', key === section ? 'block' : 'none');
         sec.header.style('background-color', key === section ? '#e0e0e0' : '#f8f8f8');
       });
+    }
+  };
+
+  // --- Equation helpers ---
+  const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+
+  const getEquationPoint = (time, type, params) => {
+    switch (type) {
+      case 'lissajous': {
+        const { A, B, a, b, delta } = params;
+        return { x: A * Math.sin(a * time + delta), y: B * Math.sin(b * time) };
+      }
+      case 'rose': {
+        const { k, R } = params; // r = R * cos(k theta)
+        const theta = time;
+        const r = R * Math.cos(k * theta);
+        return { x: r * Math.cos(theta), y: r * Math.sin(theta) };
+      }
+      case 'hypotrochoid': {
+        const { bigR, smallr, d } = params;
+        const R = bigR, r = smallr;
+        return {
+          x: (R - r) * Math.cos(time) + d * Math.cos(((R - r) / r) * time),
+          y: (R - r) * Math.sin(time) - d * Math.sin(((R - r) / r) * time),
+        };
+      }
+      case 'epitrochoid': {
+        const { bigR, smallr, d } = params;
+        const R = bigR, r = smallr;
+        return {
+          x: (R + r) * Math.cos(time) - d * Math.cos(((R + r) / r) * time),
+          y: (R + r) * Math.sin(time) - d * Math.sin(((R + r) / r) * time),
+        };
+      }
+      case 'lemniscate': {
+        const { ALem, BLem } = params;
+        return { x: ALem * Math.cos(time), y: (BLem / 2) * Math.sin(2 * time) };
+      }
+      case 'arch_spiral': {
+        const { aSpiral, bSpiral } = params;
+        const r = aSpiral + bSpiral * time;
+        return { x: r * Math.cos(time), y: r * Math.sin(time) };
+      }
+      default:
+        return { x: 0, y: 0 };
     }
   };
 
@@ -253,6 +328,26 @@ const Gradient = (p) => {
         magicBtn.style('color', 'white');
         return false;
       });
+
+      // Equation mode button
+      let equationBtn = p.createButton('ƒx Equation Mode');
+      equationBtn.parent(quickContent);
+      equationBtn.style('width', '100%');
+      equationBtn.style('margin', '5px 0');
+      equationBtn.style('padding', '8px');
+      equationBtn.style('border-radius', '5px');
+      equationBtn.style('border', '1px solid #ccc');
+      equationBtn.style('background-color', controlMode === 'equation' ? '#007bff' : '#f0f0f0');
+      equationBtn.style('color', controlMode === 'equation' ? 'white' : 'black');
+      const activateEquationMode = () => {
+        controlMode = 'equation';
+        t = 0;
+        path = [{ x: currentX, y: currentY }];
+        equationBtn.style('background-color', '#007bff');
+        equationBtn.style('color', 'white');
+      };
+      equationBtn.mousePressed(activateEquationMode);
+      equationBtn.touchStarted(() => { activateEquationMode(); return false; });
 
       // Motion control permission button
       let motionBtn = p.createButton(hasDeviceOrientation ? '📱 Motion Active' : '📱 Enable Motion');
@@ -555,6 +650,8 @@ const Gradient = (p) => {
 
       // Instructions
       p.createP('💡 Touch and drag to draw').parent(mobileMenu).style('margin-top', '15px').style('font-size', '12px').style('color', '#666');
+      // Minimal equation controls
+      attachMobileEquationControls(mobileMenu);
     }
   };
 
@@ -609,7 +706,7 @@ const Gradient = (p) => {
         // Generate a random gray value
         const noiseValue = p.random(180, 255);
         // Generate a random alpha value (0-255 for texture buffer)
-        const alphaValue = p.random(15, 45);
+        const alphaValue = p.random(15, 90);
         noiseTexture.pixels[index] = noiseValue;     // R
         noiseTexture.pixels[index + 1] = noiseValue; // G
         noiseTexture.pixels[index + 2] = noiseValue; // B
@@ -676,6 +773,7 @@ const Gradient = (p) => {
       modeSelect.option('orientation', 'magic_orientation');
       modeSelect.option('device orientation', 'device_orientation');
       modeSelect.option('joystick');
+      modeSelect.option('equation');
       modeSelect.selected(controlMode);
       modeSelect.changed(() => {
         controlMode = modeSelect.value();
@@ -684,7 +782,89 @@ const Gradient = (p) => {
         } else if (controlMode === 'device_orientation' && !hasDeviceOrientation) {
           requestDeviceOrientation();
         }
+        if (controlMode === 'equation') {
+          t = 0;
+          path = [{ x: currentX, y: currentY }];
+          if (equationControlsContainer) equationControlsContainer.style('display', 'block');
+        } else if (equationControlsContainer) {
+          equationControlsContainer.style('display', 'none');
+        }
       });
+
+      // Equation Controls (hidden unless equation mode)
+      p.createP('Equation Controls:').parent(controlPanel);
+      equationControlsContainer = p.createDiv('');
+      equationControlsContainer.parent(controlPanel);
+      equationControlsContainer.style('display', controlMode === 'equation' ? 'block' : 'none');
+      const inner = p.createDiv('');
+      inner.parent(equationControlsContainer);
+      const paramsContainer = p.createDiv('');
+      paramsContainer.parent(inner);
+
+      equationSelect = p.createSelect();
+      equationSelect.parent(inner);
+      equationSelect.option('Lissajous', 'lissajous');
+      equationSelect.option('Rose', 'rose');
+      equationSelect.option('Hypotrochoid', 'hypotrochoid');
+      equationSelect.option('Epitrochoid', 'epitrochoid');
+      equationSelect.option('Lemniscate', 'lemniscate');
+      equationSelect.option('Archimedean Spiral', 'arch_spiral');
+      equationSelect.selected(equationType);
+      equationSelect.changed(() => {
+        equationType = equationSelect.value();
+        t = 0;
+        path = [{ x: currentX, y: currentY }];
+        buildEquationParamSliders();
+      });
+
+      p.createSpan(' Speed ').parent(inner);
+      equationDtSlider = p.createSlider(0.001, 0.2, dt, 0.001);
+      equationDtSlider.parent(inner);
+
+      const buildEquationParamSliders = () => {
+        // Clear previous controls
+        paramsContainer.html('');
+        Object.keys(equationParamSliders).forEach(k => delete equationParamSliders[k]);
+
+        const addSlider = (label, key, min, max, step, value) => {
+          const row = p.createDiv('');
+          row.parent(paramsContainer);
+          p.createSpan(` ${label}: `).parent(row);
+          const slider = p.createSlider(min, max, value, step);
+          slider.parent(row);
+          equationParamSliders[key] = slider;
+        };
+
+        switch (equationType) {
+          case 'lissajous':
+            addSlider('A', 'A', 0.2, 2, 0.01, equationParams.A);
+            addSlider('B', 'B', 0.2, 2, 0.01, equationParams.B);
+            addSlider('a', 'a', 1, 10, 1, equationParams.a);
+            addSlider('b', 'b', 1, 10, 1, equationParams.b);
+            addSlider('delta', 'delta', 0, Math.PI, 0.01, equationParams.delta);
+            break;
+          case 'rose':
+            addSlider('k', 'k', 1, 12, 1, equationParams.k);
+            addSlider('R', 'R', 0.2, 2, 0.01, equationParams.R);
+            break;
+          case 'hypotrochoid':
+          case 'epitrochoid':
+            addSlider('R', 'bigR', 1, 20, 0.1, equationParams.bigR);
+            addSlider('r', 'smallr', 0.5, 20, 0.1, equationParams.smallr);
+            addSlider('d', 'd', 0, 20, 0.1, equationParams.d);
+            break;
+          case 'lemniscate':
+            addSlider('A', 'ALem', 0.2, 2, 0.01, equationParams.ALem);
+            addSlider('B', 'BLem', 0.2, 2, 0.01, equationParams.BLem);
+            break;
+          case 'arch_spiral':
+            addSlider('a', 'aSpiral', 0.0, 0.2, 0.001, equationParams.aSpiral);
+            addSlider('b', 'bSpiral', 0.0, 0.2, 0.001, equationParams.bSpiral);
+            break;
+        }
+      };
+
+      buildEquationParamSliders();
 
       p.createP('Size Distribution:').parent(controlPanel);
       sizeDistributionSelect = p.createSelect();
@@ -768,6 +948,33 @@ const Gradient = (p) => {
   const handleDeviceOrientation = (event) => {
     deviceOrientationData.beta = event.beta;  // -180 to 180 (front/back tilt)
     deviceOrientationData.gamma = event.gamma; // -90 to 90 (left/right tilt)
+  };
+
+  // --- Mobile-specific: minimal equation controls ---
+  const attachMobileEquationControls = (parent) => {
+    if (!isSmallScreen) return;
+    const eqBlock = p.createDiv('');
+    eqBlock.parent(parent);
+    p.createSpan('Equation: ').parent(eqBlock);
+    const sel = p.createSelect();
+    sel.parent(eqBlock);
+    sel.option('Lissajous', 'lissajous');
+    sel.option('Rose', 'rose');
+    sel.option('Hypotrochoid', 'hypotrochoid');
+    sel.option('Epitrochoid', 'epitrochoid');
+    sel.option('Lemniscate', 'lemniscate');
+    sel.option('Archimedean Spiral', 'arch_spiral');
+    sel.selected(equationType);
+    sel.changed(() => {
+      equationType = sel.value();
+      t = 0;
+      path = [{ x: currentX, y: currentY }];
+    });
+    p.createSpan(' Speed ').parent(eqBlock);
+    const sp = p.createSlider(0.001, 0.2, dt, 0.001);
+    sp.parent(eqBlock);
+    sp.style('width', '100%');
+    sp.input(() => { dt = sp.value(); });
   };
 
   p.setup = () => {
@@ -860,6 +1067,10 @@ const Gradient = (p) => {
             rawY = joy.y;
           }
           break;
+        case 'equation':
+          rawX = 0;
+          rawY = 0;
+          break;
       }
       
       rawValuesDisplay.html(`Raw: x: ${Math.round(rawX)}, y: ${Math.round(rawY)}`);
@@ -903,6 +1114,28 @@ const Gradient = (p) => {
           targetY = p.map(joy.y, -1, 1, 0, p.height, true);
         }
         break;
+      case 'equation': {
+        // Update equation params from sliders (desktop only)
+        if (equationParamSliders && Object.keys(equationParamSliders).length) {
+          Object.entries(equationParamSliders).forEach(([key, slider]) => {
+            if (slider && slider.value) {
+              equationParams[key] = slider.value();
+            }
+          });
+        }
+        // Update dt if slider exists
+        if (equationDtSlider && equationDtSlider.value) {
+          dt = equationDtSlider.value();
+        }
+
+        const pt = getEquationPoint(t, equationType, equationParams);
+        const xNorm = clamp(pt.x, -1, 1);
+        const yNorm = clamp(pt.y, -1, 1);
+        targetX = p.width * (0.5 + 0.45 * xNorm);
+        targetY = p.height * (0.5 + 0.45 * yNorm);
+        t += dt;
+        break;
+      }
     }
 
     // --- Smoothly Update Current Position ---
@@ -1063,6 +1296,7 @@ const Gradient = (p) => {
       console.log("Saved canvas to gradient-path.png");
     }
     if (p.key === 'c' || p.key === 'C') {
+      t = 0;
       path = [{ x: currentX, y: currentY }];
       console.log("Cleared trail");
     }

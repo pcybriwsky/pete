@@ -147,7 +147,13 @@ const sketches = [
                                     description: 'An atmospheric 3D environment with floating particles and rings.',
                                     instructions: 'Click to interact. Use debug mode to change palettes.',
                                     type: '3d'
-                                  }
+                                  },
+                                  {
+                                      id: 'atmosphere2',
+                                      title: 'Atmosphere2',
+                                      description: 'A new creative sketch description.',
+                                      instructions: 'Instructions for the new sketch.'
+                                    }
 ];
 
 const SketchGallery = () => {

@@ -102,7 +102,11 @@ const sketchMap = {
                                   component: 'Atmosphere',
                                   displayName: 'Atmosphere',
                                   type: '3d'
-                                }
+                                },
+                                'atmosphere2': {
+                                    component: 'Atmosphere2',
+                                    displayName: 'Atmosphere2'
+                                  }
 };
 
 const SketchPage = () => {

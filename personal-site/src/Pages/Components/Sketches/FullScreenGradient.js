@@ -1,59 +1,14 @@
 import * as magic from "@indistinguishable-from-magic/magic-js"
 
-// IMPORTANT: Ensure ShaderPark is loaded/imported before this script runs.
-// Shader Park function - Phase 1: Simple time/mouse driven color
-function shaderParkGradient(props, inputs) {
-  // props contains: time, mouse (normalized 0-1), resolution, etc.
-  // inputs contains: any custom data we pass via sp.setInputs()
-
-  let r = props.mouse.x; 
-  let g = props.mouse.y;
-  let b = 0.5 + 0.5 * Math.sin(props.time * 0.5); // Slower time effect
-
-  props.color(r, g, b); // Sets the output color for the current pixel
-}
-
 // Max palette size for Shader Park inputs (if we pass as fixed-size array)
 const SP_MAX_PALETTE_SIZE = 6;
-
-// This function IS the Shader Park code, written in Shader Park's JS-like GLSL replacement.
-// It will be passed to createShaderPark().
-// It uses Shader Park global functions like input(), color(), vec3(), sin(), mod(), mix().
-// For uniforms set via sdf.setUniform(), they are typically accessed via p.getUniform() in p5.js instance mode for this addon.
-function shaderParkSdfCode(p) { // Pass p to access p.getUniform if needed by the addon style
-    // Access uniforms set by sdf.setUniform()
-    // The p5.shader-park.js addon might make these available globally too (time, mouseX etc.)
-    // or require p.getUniform(). Let's try with p.getUniform() for robustness.
-    let time = p.getUniform('time') || 0.0;
-    let mouseX = p.getUniform('mouseX') || 0.5;
-    let mouseY = p.getUniform('mouseY') || 0.5;
-    let numColors = p.getUniform('numColors') || 0;
-    
-    let color0 = p.getUniform('color0') || [0.0, 0.0, 0.0];
-    let color1 = p.getUniform('color1') || [0.0, 0.0, 0.0];
-    // Retrieve other colors if needed for more complex gradients later
-    // let color2 = p.getUniform('color2') || [0.0, 0.0, 0.0];
-    // ... up to color5
-
-    // Shader Park Math/API calls (these are global within Shader Park execution context)
-    let t = mouseX + Math.sin(time * 0.5 + mouseY * 5.0) * 0.25;
-    t = Math.mod(t, 1.0); 
-
-    let finalColorVec = p.vec3(0.1, 0.1, 0.2); // Default dark blue
-
-    if (numColors == 1) {
-      finalColorVec = p.vec3(color0[0], color0[1], color0[2]);
-    } else if (numColors >= 2) {
-      finalColorVec = p.mix(p.vec3(color0[0], color0[1], color0[2]), p.vec3(color1[0], color1[1], color1[2]), t);
-    } 
-
-    p.color(finalColorVec); // Set the output color for the current fragment
-}
 
 const FullScreenGradient = (p) => {
   let isDevMode = true; 
   let isMagic = false;
   let sdf; // To hold the Shader Park SDF object
+  let useShaderPark = false; // Flag to track if Shader Park is available
+  let shaderParkLoaded = false; // Track if Shader Park has been loaded
 
   const palettes = {
     sunset: {"Melon":"ffa69e","Eggshell":"faf3dd","Celeste":"b8f2e6","LightBlue":"aed9e0","PaynesGray":"5e6472"},
@@ -108,27 +63,139 @@ const FullScreenGradient = (p) => {
     updateShaderParkColorData(); // Prepare data for Shader Park after shuffle
   };
 
-  p.setup = () => {
+  // Fallback gradient using p5.js (no Shader Park)
+  const drawP5Gradient = () => {
+    p.loadPixels();
+    let d = p.pixelDensity();
+    let w = p.width * d;
+    let h = p.height * d;
+    
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        let index = 4 * (y * w + x);
+        
+        // Normalize coordinates
+        let nx = x / w;
+        let ny = y / h;
+        
+        // Create animated gradient based on mouse and time
+        let time = p.millis() / 1000.0;
+        let mouseXNorm = p.constrain(p.mouseX / p.width, 0.0, 1.0);
+        let mouseYNorm = p.constrain(p.mouseY / p.height, 0.0, 1.0);
+        
+        // Create animated t value
+        let t = mouseXNorm + Math.sin(time * 0.5 + mouseYNorm * 5.0) * 0.25;
+        t = (t % 1.0 + 1.0) % 1.0; // Ensure t is between 0 and 1
+        
+        // Get colors from current palette
+        let color1 = p.color(jsHexColors[0] || '#000000');
+        let color2 = p.color(jsHexColors[1] || '#ffffff');
+        
+        // Interpolate between colors
+        let r = p.lerp(p.red(color1), p.red(color2), t);
+        let g = p.lerp(p.green(color1), p.green(color2), t);
+        let b = p.lerp(p.blue(color1), p.blue(color2), t);
+        
+        p.pixels[index] = r;
+        p.pixels[index + 1] = g;
+        p.pixels[index + 2] = b;
+        p.pixels[index + 3] = 255;
+      }
+    }
+    p.updatePixels();
+  };
+
+  // Try to load Shader Park dynamically
+  const loadShaderPark = () => {
+    return new Promise((resolve) => {
+      // Check if already loaded
+      if (window.ShaderPark) {
+        console.log("Shader Park already loaded");
+        resolve(true);
+        return;
+      }
+
+      // Try to load Shader Park from CDN
+      console.log("Attempting to load Shader Park...");
+      
+      // Create script element for Shader Park Core
+      const script1 = document.createElement('script');
+      script1.type = 'module';
+      script1.src = 'https://unpkg.com/shader-park-core@0.2.8/dist/shader-park-core.js';
+      script1.onload = () => {
+        console.log("Shader Park Core loaded");
+        
+        // Create script element for p5.js addon
+        const script2 = document.createElement('script');
+        script2.type = 'module';
+        script2.src = 'https://unpkg.com/shader-park-core@0.2.8/dist/shader-park-p5.js';
+        script2.onload = () => {
+          console.log("Shader Park p5.js addon loaded");
+          // Give it a moment to initialize
+          setTimeout(() => {
+            if (window.ShaderPark) {
+              console.log("Shader Park successfully loaded and available");
+              resolve(true);
+            } else {
+              console.log("Shader Park loaded but ShaderPark not available");
+              resolve(false);
+            }
+          }, 100);
+        };
+        script2.onerror = () => {
+          console.log("Failed to load Shader Park p5.js addon");
+          resolve(false);
+        };
+        document.head.appendChild(script2);
+      };
+      script1.onerror = () => {
+        console.log("Failed to load Shader Park Core");
+        resolve(false);
+      };
+      document.head.appendChild(script1);
+    });
+  };
+
+  p.setup = async () => {
     // p5.js creates the canvas. Shader Park will use this existing canvas.
     // Shader Park needs a WebGL context if its shaders are GLSL-based.
     let canvas = p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
     p.noStroke();
 
     selectRandomPalette(); // Initialize jsHexColors and prepare SP data
-    // sdf = createShaderPark(function() {
-    //   sphere(0.5);
-    //   displace(0.5, 0.2, 0.2);
-    //   color(1, 0, 0);
-    //   sphere(0.25);
-    // });
-
-
     
-    console.log("FullScreenGradient setup complete (Shader Park). Press 'r' to shuffle palette.");
+    // Try to load and initialize Shader Park
+    try {
+      shaderParkLoaded = await loadShaderPark();
+      
+      if (shaderParkLoaded && window.ShaderPark) {
+        console.log("Initializing Shader Park...");
+        
+        // Create a simple sphere using Shader Park's API
+        sdf = window.ShaderPark.createShaderPark(function() {
+          // eslint-disable-next-line no-undef
+          // Simple sphere as requested
+          // sphere(0.5);
+          // eslint-disable-next-line no-undef
+          color(1, 0, 0); // Red color
+        });
+        
+        useShaderPark = true;
+        console.log("Shader Park initialized successfully with sphere");
+      } else {
+        console.log("Shader Park not available, using p5.js fallback");
+        useShaderPark = false;
+      }
+    } catch (error) {
+      console.error("Failed to initialize Shader Park:", error);
+      useShaderPark = false;
+    }
+    
+    console.log("FullScreenGradient setup complete. Press 'r' to shuffle palette.");
   };
 
   p.draw = () => {
-    if (sdf) {
+    if (useShaderPark && sdf) {
       // Set uniforms for Shader Park before drawing
       sdf.setUniform('time', p.millis() / 1000.0);
       sdf.setUniform('mouseX', p.constrain(p.mouseX / p.width, 0.0, 1.0));
@@ -139,6 +206,9 @@ const FullScreenGradient = (p) => {
       }
 
       sdf.draw(); // Draw the Shader Park SDF
+    } else {
+      // Fallback to p5.js gradient
+      drawP5Gradient();
     }
   };
 

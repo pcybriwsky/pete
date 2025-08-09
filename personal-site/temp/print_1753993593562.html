@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Song Swap Card</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background: white; 
+            overflow: hidden;
+            width: 336px;
+            height: 192px;
+        }
+        canvas { 
+            display: block; 
+            margin: 0; 
+            width: 336px;
+            height: 192px;
+        }
+        @media print {
+            body { 
+                margin: 0; 
+                padding: 0; 
+                background: white; 
+                width: 3.5in;
+                height: 2in;
+                overflow: hidden;
+            }
+            canvas { 
+                margin: 0; 
+                width: 3.5in;
+                height: 2in;
+                page-break-inside: avoid; 
+            }
+            @page { 
+                margin: 0; 
+                size: 3.5in 2in; 
+            }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        function setup() {
+            createCanvas(336, 192); // 3.5" x 2" at 96 DPI
+            noLoop(); // Only draw once
+        }
+        
+        function draw() {
+            background(255);
+            
+            // Draw deposited song (left side)
+            fill(0);
+            textAlign(LEFT, TOP);
+            textSize(12);
+            text("DEPOSITED:", 10, 10);
+            textSize(16);
+            text("FEAR OF HEIGHTS", 10, 30);
+            textSize(12);
+            text("by South Arcade", 10, 50);
+            text("from FEAR OF HEIGHTS", 10, 65);
+            text("Genre: Unknown", 10, 80);
+            
+            // Draw received song (right side)
+            textAlign(LEFT, TOP);
+            textSize(12);
+            text("RECEIVED:", 168, 10);
+            textSize(16);
+            text("pause", 168, 30);
+            textSize(12);
+            text("by eaJ", 168, 50);
+            text("from 1", 168, 65);
+            text("Genre: Unknown", 168, 80);
+            
+            // Draw swap icon
+            fill(100);
+            ellipse(168, 120, 20, 20);
+            textAlign(CENTER, CENTER);
+            text("⇄", 168, 120);
+            
+            // Footer
+            textAlign(CENTER, BOTTOM);
+            textSize(10);
+            text("Swapped at repete.art", 168, 180);
+            
+            // Canvas is ready for capture
+        }
+        }
+    </script>
+</body>
+</html>
