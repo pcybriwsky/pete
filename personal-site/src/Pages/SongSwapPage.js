@@ -241,7 +241,7 @@ const SongSwapPage = () => {
 
     // Pull top 1 track and enrich with artist genres
     const top1Response = await fetch(
-      `https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=1`,
+      `https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=2`,
       {
         method: "GET",
         headers: { 'Authorization': 'Bearer ' + data.access_token }
@@ -252,8 +252,8 @@ const SongSwapPage = () => {
     console.log('Top 1 track response:', top1Data);
 
     if (top1Data.items && top1Data.items.length > 0) {
-      const track = top1Data.items[0];
-      const artistId = track.artists?.[0]?.id;
+      const track = top1Data.items[1];
+      const artistId = track.artists?.[1]?.id;
 
       let artistGenres = [];
       if (artistId) {

@@ -69,8 +69,8 @@ const Gradient = (p) => {
   let isAmbient = false;
   let ambientPrevMode = null;
   let idleTimeoutMs = 8000; // enter ambient after ~8s of low motion
-  let ambientEquationSwitchMs = 30000; // switch equation every 30s
-  let ambientPaletteSwitchMs = 20000; // rotate palette every 20s
+  let ambientEquationSwitchMs = 10000; // switch equation every 10s
+  let ambientPaletteSwitchMs = 5000; // rotate palette every 5s
   let lastMotionMs = 0;
   let lastEquationSwitchAtMs = 0;
   let lastPaletteSwitchAtMs = 0;
@@ -94,6 +94,20 @@ const Gradient = (p) => {
   let prevJoyX = 0;
   let prevJoyY = 0;
   let ambientStartedAtMs = 0;
+  
+  // --- Auto-transition Variables ---
+  let lastAutoPaletteSwitchAtMs = 0;
+  let lastAutoEquationSwitchAtMs = 0;
+  let autoPaletteSwitchMs = 5000; // auto palette switch every 5s
+  let autoEquationSwitchMs = 10000; // auto equation switch every 10s
+  
+  // --- Sensor Threshold Variables ---
+  let sensorThreshold = 5; // degrees of change to trigger sensor mode
+  let lastSensorBeta = 0;
+  let lastSensorGamma = 0;
+  let lastMagicY = 0;
+  let lastMagicW = 0;
+  let sensorModeTriggered = false;
 
   // --- Visual Style Variables ---
   const palettes = {
@@ -426,6 +440,7 @@ const Gradient = (p) => {
       magicBtn.style('color', controlMode === 'magic_orientation' ? 'white' : 'black');
       magicBtn.mousePressed(async () => {
         controlMode = 'magic_orientation';
+        sensorModeTriggered = false; // Reset sensor trigger
         await connectMagic();
         magicBtn.style('background-color', '#007bff');
         magicBtn.style('color', 'white');
@@ -450,6 +465,7 @@ const Gradient = (p) => {
       equationBtn.style('color', controlMode === 'equation' ? 'white' : 'black');
       const activateEquationMode = () => {
         controlMode = 'equation';
+        sensorModeTriggered = false; // Reset sensor trigger
         t = 0;
         path = [{ x: currentX, y: currentY }];
         equationBtn.style('background-color', '#007bff');
@@ -486,6 +502,7 @@ const Gradient = (p) => {
                 motionBtn.style('background-color', '#28a745');
                 motionBtn.style('color', 'white');
                 controlMode = 'device_orientation';
+                sensorModeTriggered = false; // Reset sensor trigger
               } else {
                 showMotionErrorModal('Motion/orientation permission denied. Please enable it in your device settings.');
               }
@@ -521,6 +538,7 @@ const Gradient = (p) => {
                 motionBtn.style('background-color', '#28a745');
                 motionBtn.style('color', 'white');
                 controlMode = 'device_orientation';
+                sensorModeTriggered = false; // Reset sensor trigger
               } else {
                 showMotionErrorModal('Motion/orientation permission denied. Please enable it in your device settings.');
               }
@@ -535,6 +553,7 @@ const Gradient = (p) => {
             motionBtn.style('background-color', '#28a745');
             motionBtn.style('color', 'white');
             controlMode = 'device_orientation';
+            sensorModeTriggered = false; // Reset sensor trigger
           }
         }
         return false;
@@ -907,6 +926,7 @@ const Gradient = (p) => {
       modeSelect.selected(controlMode);
       modeSelect.changed(() => {
         controlMode = modeSelect.value();
+        sensorModeTriggered = false; // Reset sensor trigger when manually changing modes
         if (controlMode === 'magic_orientation' && !isMagic) {
           connectMagic();
         } else if (controlMode === 'device_orientation' && !hasDeviceOrientation) {
@@ -1054,6 +1074,12 @@ const Gradient = (p) => {
       console.log("Magic connected. Modules:", magic.modules);
       isMagic = true;
       path = [{ x: currentX, y: currentY }];
+      
+      // Initialize Magic orientation values for sensor detection
+      if (magic.modules.imu?.orientation) {
+        lastMagicY = magic.modules.imu.orientation.y;
+        lastMagicW = magic.modules.imu.orientation.w;
+      }
     } catch (error) {
       console.error("Failed to connect magic:", error);
       isMagic = false;
@@ -1094,6 +1120,21 @@ const Gradient = (p) => {
   const handleDeviceOrientation = (event) => {
     deviceOrientationData.beta = event.beta;  // -180 to 180 (front/back tilt)
     deviceOrientationData.gamma = event.gamma; // -90 to 90 (left/right tilt)
+    
+    // Check for significant sensor changes to auto-trigger sensor mode
+    if (!sensorModeTriggered && hasDeviceOrientation) {
+      const betaChange = Math.abs(event.beta - lastSensorBeta);
+      const gammaChange = Math.abs(event.gamma - lastSensorGamma);
+      
+      if (betaChange > sensorThreshold || gammaChange > sensorThreshold) {
+        sensorModeTriggered = true;
+        controlMode = 'device_orientation';
+        console.log("Sensor mode auto-activated due to device movement");
+      }
+    }
+    
+    lastSensorBeta = event.beta;
+    lastSensorGamma = event.gamma;
   };
 
   // --- Mobile-specific: minimal equation controls ---
@@ -1158,9 +1199,18 @@ const Gradient = (p) => {
     }
 
     console.log("Gradient setup complete. Press 't' or tap menu button to toggle controls. Press 'r' to shuffle, 's' to save.");
+    console.log("Auto-transitions: Colors every 5s, Equations every 10s, Sensor mode auto-activates on device/Magic movement");
     lastMotionMs = performance.now();
     lastEquationSwitchAtMs = lastMotionMs;
     lastPaletteSwitchAtMs = lastMotionMs;
+    lastAutoPaletteSwitchAtMs = lastMotionMs;
+    lastAutoEquationSwitchAtMs = lastMotionMs;
+    
+    // Initialize Magic orientation values if Magic is already connected
+    if (isMagic && magic.modules?.imu?.orientation) {
+      lastMagicY = magic.modules.imu.orientation.y;
+      lastMagicW = magic.modules.imu.orientation.w;
+    }
   };
 
   p.draw = () => {
@@ -1230,6 +1280,8 @@ const Gradient = (p) => {
       targetValuesDisplay.html(`Target: x: ${Math.round(targetX)}, y: ${Math.round(targetY)}`);
     }
 
+
+
     // --- Update Target Position based on control mode ---
     switch (controlMode) {
       case 'mouse':
@@ -1293,6 +1345,30 @@ const Gradient = (p) => {
 
     // --- Ambient Mode Detection and Scheduling ---
     const nowMs = performance.now();
+    
+    // --- Check for Magic orientation changes to auto-trigger sensor mode ---
+    if (isMagic && magic.modules.imu?.orientation) {
+      const currentMagicY = magic.modules.imu.orientation.y;
+      const currentMagicW = magic.modules.imu.orientation.w;
+      const magicYChange = Math.abs(currentMagicY - lastMagicY);
+      const magicWChange = Math.abs(currentMagicW - lastMagicW);
+      
+      if (magicYChange > 0.1 || magicWChange > 0.1) { // Magic values are typically 0-1 range
+        // Force exit ambient mode and switch to Magic mode when movement detected
+        if (isAmbient) {
+          isAmbient = false;
+          ambientPrevMode = 'magic_orientation';
+        }
+        controlMode = 'magic_orientation';
+        // Update motion timer to prevent immediate ambient mode
+        lastMotionMs = nowMs;
+        console.log("Magic sensor mode activated due to device movement");
+      }
+      
+      lastMagicY = currentMagicY;
+      lastMagicW = currentMagicW;
+    }
+    
     // Measure sensor/mouse movement magnitude
     const dx = targetX - prevTargetX;
     const dy = targetY - prevTargetY;
@@ -1300,6 +1376,14 @@ const Gradient = (p) => {
     const sensorDy = (deviceOrientationData.beta || 0) - prevSensorY;
     const mouseDx = p.mouseX - prevMouseX;
     const mouseDy = p.mouseY - prevMouseY;
+    
+    // Add Magic orientation movement detection
+    let magicDx = 0, magicDy = 0;
+    if (isMagic && magic.modules.imu?.orientation) {
+      magicDx = Math.abs(magic.modules.imu.orientation.y - lastMagicY);
+      magicDy = Math.abs(magic.modules.imu.orientation.w - lastMagicW);
+    }
+    
     prevMouseX = p.mouseX;
     prevMouseY = p.mouseY;
     prevTargetX = targetX;
@@ -1310,7 +1394,7 @@ const Gradient = (p) => {
     // (mouse, device orientation, joystick if present). Outside ambient, include target motion.
     let movementMag = 0;
     if (isAmbient) {
-      movementMag = Math.hypot(sensorDx, sensorDy) * 5 + Math.hypot(mouseDx, mouseDy);
+      movementMag = Math.hypot(sensorDx, sensorDy) * 5 + Math.hypot(mouseDx, mouseDy) + Math.hypot(magicDx, magicDy) * 10;
       // Optionally include joystick deltas
       if (magic.modules?.joystick) {
         const jx = magic.modules.joystick.x || 0;
@@ -1321,7 +1405,7 @@ const Gradient = (p) => {
         prevJoyX = jx; prevJoyY = jy;
       }
     } else {
-      movementMag = Math.hypot(dx, dy) + Math.hypot(sensorDx, sensorDy) * 5 + Math.hypot(mouseDx, mouseDy);
+      movementMag = Math.hypot(dx, dy) + Math.hypot(sensorDx, sensorDy) * 5 + Math.hypot(mouseDx, mouseDy) + Math.hypot(magicDx, magicDy) * 10;
     }
     // Base threshold adapts to canvas size
     const MOVEMENT_THRESHOLD = Math.max(20, Math.min(p.width, p.height) * 0.01);
@@ -1355,6 +1439,30 @@ const Gradient = (p) => {
       ambientStartedAtMs = nowMs;
     }
 
+    // --- Auto-transitions (both ambient and regular mode) ---
+    if (nowMs - lastAutoPaletteSwitchAtMs >= autoPaletteSwitchMs) {
+      const paletteNames = Object.keys(palettes);
+      const randomPaletteName = paletteNames[Math.floor(p.random(paletteNames.length))];
+      const randomPalette = palettes[randomPaletteName];
+      const newColors = Object.values(randomPalette).map(c => c.startsWith('#') ? c : `#${c}`);
+      startPaletteTransition(newColors);
+      lastAutoPaletteSwitchAtMs = nowMs;
+      console.log("Auto palette transition:", randomPaletteName);
+    }
+    
+    if (nowMs - lastAutoEquationSwitchAtMs >= autoEquationSwitchMs) {
+      if (controlMode === 'equation') {
+        const equationTypes = ['lissajous', 'squiggle', 'wave_sweep', 'rose', 'hypotrochoid', 'epitrochoid', 'lemniscate', 'arch_spiral'];
+        const randomEquationType = equationTypes[Math.floor(p.random(equationTypes.length))];
+        equationType = randomEquationType;
+        equationParams = randomAmbientParamsFor(equationType);
+        t = 0;
+        path = [{ x: currentX, y: currentY }];
+        console.log("Auto equation transition:", randomEquationType);
+      }
+      lastAutoEquationSwitchAtMs = nowMs;
+    }
+    
     if (isAmbient) {
       // Rotate equation
       if (nowMs - lastEquationSwitchAtMs >= ambientEquationSwitchMs) {
@@ -1562,6 +1670,12 @@ const Gradient = (p) => {
         isMagic = true;
         // Reset path when magic connects successfully
         path = [{ x: currentX, y: currentY }];
+        
+        // Initialize Magic orientation values for sensor detection
+        if (magic.modules.imu?.orientation) {
+          lastMagicY = magic.modules.imu.orientation.y;
+          lastMagicW = magic.modules.imu.orientation.w;
+        }
       } catch (error) {
         console.error("Failed to connect magic:", error);
         isMagic = false; // Ensure isMagic is false if connection failed

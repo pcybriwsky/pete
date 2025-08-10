@@ -111,22 +111,26 @@ const P5Wrapper = ({ sketch }) => {
     <div className="w-screen h-screen overflow-hidden">
       <div ref={sketchRef} className="absolute inset-0 w-full h-full" style={{ margin: 0, padding: 0 }} />
       
-      {/* Debug toggle button */}
-      <button
-        onClick={toggleDebug}
-        className="fixed top-4 right-4 z-40 bg-black/60 text-white px-3 py-2 rounded-lg border border-white/20 hover:bg-black/80 transition-colors"
-      >
-        Debug
-      </button>
+      {/* Debug toggle button - hidden for Gradient sketch */}
+      {sketch !== 'Gradient' && (
+        <button
+          onClick={toggleDebug}
+          className="fixed top-4 right-4 z-40 bg-black/60 text-white px-3 py-2 rounded-lg border border-white/20 hover:bg-black/80 transition-colors"
+        >
+          Debug
+        </button>
+      )}
       
-      {/* Debug Panel */}
-      <DebugPanel
-        isVisible={isDebugVisible}
-        onToggle={toggleDebug}
-        controls={debugControls}
-        onControlChange={handleDebugControlChange}
-        title={`${sketch} Debug`}
-      />
+      {/* Debug Panel - hidden for Gradient sketch */}
+      {sketch !== 'Gradient' && (
+        <DebugPanel
+          isVisible={isDebugVisible}
+          onToggle={toggleDebug}
+          controls={debugControls}
+          onControlChange={handleDebugControlChange}
+          title={`${sketch} Debug`}
+        />
+      )}
     </div>
   );
 };
