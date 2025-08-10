@@ -26,6 +26,7 @@ const SongSwapPage = () => {
   const [songs, setSongs] = useState(null);
   const [recommendationNote, setRecommendationNote] = useState('');
   const [depositCount, setDepositCount] = useState(0);
+  const [recommendationStatus, setRecommendationStatus] = useState(null);
   
   // Debug: Log when songs state changes
   useEffect(() => {
@@ -166,6 +167,9 @@ const SongSwapPage = () => {
       const printWithdrawalFn = httpsCallable(functions, 'printWithdrawal');
       await printWithdrawalFn({ receivedSong: cleanReceivedSong });
       console.log('✅ Withdrawal print queued');
+      
+      // Show thank you message
+      setRecommendationStatus('thank-you');
     } catch (error) {
       console.error('❌ Immediate recommendation print error:', error);
       setError('Failed to get recommendation. Please try again.');
@@ -736,6 +740,10 @@ const SongSwapPage = () => {
 
         {!spotifyUser ? (
           <div className="auth-section">
+            <div className="welcome-message">
+              <p>Welcome to Bangers Only Bank, where we only transact in your favorite music.<br />Please deposit a song with Spotify, or retrieve a recommendation from our system.</p>
+            </div>
+            
             <div className="auth-buttons">
               <button 
                 className="auth-button spotify"
@@ -754,9 +762,6 @@ const SongSwapPage = () => {
                 Get a Recommendation
               </button>
             </div>
-            <p className="auth-note">
-              Connect with Spotify to use your top songs, or get a curated recommendation
-            </p>
             
             {isProcessing && (
               <div className="loading-section">
@@ -778,6 +783,19 @@ const SongSwapPage = () => {
                     </button>
                   </div>
                 ) : null}
+              </div>
+            ) : recommendationStatus === 'thank-you' ? (
+              <div className="thank-you-message">
+                <h2>Thank you for banking with us</h2>
+                <p>Please visit the receipt printer for proof of transaction</p>
+                <a 
+                  href="https://open.spotify.com/playlist/3PcOGGOI7r84VuQb6bwMkX?si=736885c62bac4543" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="playlist-link"
+                >
+                  View Full Playlist
+                </a>
               </div>
             ) : topSongs ? (
               <div className="song-selection-section">
