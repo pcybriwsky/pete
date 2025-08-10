@@ -772,6 +772,7 @@ const SongSwapPage = () => {
                 {songs.status === 'thank-you' ? (
                   <div className="thank-you-message">
                     <h2>Thank you</h2>
+                    <p>Please visit the receipt printer for proof of transaction</p>
                     <button className="get-recommendation-button" onClick={handleImmediateRecommendationPrint}>
                       Get Recommendation
                     </button>
