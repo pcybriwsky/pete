@@ -39,6 +39,7 @@
     "react-markdown": "^9.0.3",
     "react-router-dom": "^6.21.1",
     "react-scripts": "5.0.1",
+    "spotify-web-api-node": "^5.0.2",
     "three": "^0.161.0",
     "tone": "^14.9.17",
     "typewriter-effect": "^2.21.0",

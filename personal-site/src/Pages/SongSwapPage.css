@@ -1,180 +1,201 @@
 .song-swap-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  height: 100vh;
+  background: white;
+  font-family: 'Courier New', Monaco, 'Lucida Console', monospace;
+  color: black;
+  padding: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
 }
 
 .song-swap-container {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 30px;
-  max-width: 500px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 0;
+  max-width: 384px;
   width: 100%;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
+  margin: 0 auto;
+  padding: 15px;
+  height: calc(100vh - 20px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.song-swap-header {
   text-align: center;
+  margin-bottom: 20px;
+  flex-shrink: 0;
 }
 
 .song-swap-header h1 {
-  font-size: 2.5rem;
-  margin: 0 0 10px 0;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 10px 0;
+  font-weight: normal;
 }
 
 .song-swap-header p {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin: 5px 0;
   color: #666;
-  margin: 0 0 15px 0;
-  font-size: 1.1rem;
 }
 
-.test-print-button {
-  background: #ff6b35;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.logo-container {
   margin-bottom: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.test-print-button:hover {
-  background: #e55a2b;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+.logo-container img {
+  max-width: 120px;
+  height: auto;
+}
+
+.deposit-counter {
+  background: #f8f8f8;
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  margin: 10px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.counter-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: normal;
+  color: #666;
+}
+
+.counter-number {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: black;
+  font-family: 'Courier New', Monaco, 'Lucida Console', monospace;
 }
 
 .auth-section {
-  margin: 30px 0;
+  margin: 15px 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow-y: auto;
 }
 
 .auth-buttons {
   display: flex;
-  flex-direction: row;
-  gap: 15px;
-  margin-bottom: 20px;
-  justify-content: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .auth-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 15px 20px;
-  border: none;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
+  padding: 10px 16px;
+  border: 1px solid #000;
+  background: white;
+  color: black;
+  border-radius: 0;
+  font-size: 0.8rem;
+  font-weight: normal;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.3s ease;
-  text-decoration: none;
 }
 
-.auth-button.spotify {
-  background: #1DB954;
+.auth-button:hover {
+  background: black;
   color: white;
-}
-
-.auth-button.spotify:hover {
-  background: #1ed760;
-  transform: translateY(-2px);
-}
-
-.auth-button.recommendation {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  color: white;
-}
-
-.auth-button.recommendation:hover {
-  background: linear-gradient(135deg, #5b5fd8 0%, #7c3aed 100%);
-  transform: translateY(-2px);
 }
 
 .auth-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
 }
 
 .auth-icon {
-  font-size: 1.2rem;
+  font-size: 1rem;
 }
 
 .auth-note {
+  font-size: 0.7rem;
+  text-align: center;
   color: #666;
-  margin: 20px 0;
-  font-size: 0.9rem;
-}
-
-.demo-button {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.demo-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  margin: 8px 0;
+  line-height: 1.3;
 }
 
 .user-section {
-  margin: 20px 0;
+  margin: 15px 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow-y: auto;
 }
 
 .user-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 10px;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.user-info p {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin: 3px 0;
+  font-weight: normal;
+}
+
+.user-info p:first-child {
+  font-weight: bold;
+  font-size: 1rem;
 }
 
 .sign-out-button {
-  background: #dc3545;
-  color: white;
-  border: none;
+  background: white;
+  color: black;
+  border: 1px solid #000;
   padding: 8px 16px;
-  border-radius: 6px;
+  border-radius: 0;
   font-size: 0.8rem;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: inherit;
 }
 
 .sign-out-button:hover {
-  background: #c82333;
+  background: black;
+  color: white;
 }
 
 .loading-section {
   text-align: center;
-  padding: 40px 20px;
+  margin: 15px 0;
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #667eea;
+  border: 2px solid #ddd;
+  border-top: 2px solid black;
   border-radius: 50%;
+  width: 20px;
+  height: 20px;
   animation: spin 1s linear infinite;
-  margin: 0 auto 20px;
+  margin: 0 auto 8px auto;
 }
 
 @keyframes spin {
@@ -183,273 +204,284 @@
 }
 
 .songs-section {
-  margin: 20px 0;
+  margin: 15px 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .song-preview {
-  margin: 20px 0;
-  display: flex;
-  justify-content: center;
+  margin-bottom: 15px;
+  text-align: center;
 }
 
 .song-info {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin: 20px 0;
-  text-align: left;
+  grid-template-columns: 1fr;
+  gap: 15px;
+  margin-bottom: 15px;
 }
 
 .song-details {
-  background: #f8f9fa;
-  padding: 15px;
-  border-radius: 10px;
+  border: 1px solid #ddd;
+  padding: 10px;
+  background: #f8f8f8;
 }
 
 .song-details h3 {
-  margin: 0 0 10px 0;
-  color: #333;
-  font-size: 1rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  margin: 0 0 8px 0;
+  font-weight: normal;
+  text-align: center;
 }
 
 .song-details p {
-  margin: 5px 0;
-  color: #666;
-  font-size: 0.9rem;
+  font-size: 0.6rem;
+  margin: 3px 0;
+  line-height: 1.2;
 }
 
 .print-button, .new-swap-button {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border: none;
-  padding: 15px 30px;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 600;
+  padding: 8px 16px;
+  border: 1px solid #000;
+  background: white;
+  color: black;
+  border-radius: 0;
+  font-size: 0.7rem;
+  font-weight: normal;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin: 10px;
-  min-width: 150px;
+  width: 100%;
+  margin-bottom: 8px;
 }
 
 .print-button:hover, .new-swap-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-}
-
-.new-swap-button {
-  background: linear-gradient(135deg, #28a745, #20c997);
-}
-
-.new-swap-button:hover {
-  box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+  background: black;
+  color: white;
 }
 
 .ready-section {
   text-align: center;
-  padding: 40px 20px;
+  margin: 15px 0;
 }
 
 .ready-section p {
-  color: #666;
-  margin-bottom: 20px;
-  font-size: 1.1rem;
+  font-size: 0.8rem;
+  margin-bottom: 10px;
 }
 
 .swap-button {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  padding: 10px 16px;
+  border: 1px solid #000;
+  background: black;
   color: white;
-  border: none;
-  padding: 15px 30px;
-  border-radius: 10px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  border-radius: 0;
+  font-size: 0.8rem;
+  font-weight: normal;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.3s ease;
 }
 
 .swap-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  background: white;
+  color: black;
 }
 
 .error-message {
-  background: #f8d7da;
-  color: #721c24;
-  padding: 15px;
-  border-radius: 8px;
-  margin: 20px 0;
-  border: 1px solid #f5c6cb;
+  background: #f8f8f8;
+  border: 1px solid #ddd;
+  padding: 10px;
+  margin: 15px 0;
   text-align: center;
+  font-size: 0.7rem;
 }
 
 .retry-button {
-  background: #dc3545;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 0.9rem;
+  padding: 6px 12px;
+  border: 1px solid #000;
+  background: white;
+  color: black;
+  border-radius: 0;
+  font-size: 0.6rem;
+  font-weight: normal;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  font-family: inherit;
   cursor: pointer;
-  transition: background 0.3s ease;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .retry-button:hover {
-  background: #c82333;
+  background: black;
+  color: white;
 }
 
 /* Song Selection Styles */
 .song-selection-section {
-  margin: 20px 0;
+  margin: 15px 0;
 }
 
 .song-selection-section h2 {
-  color: #333;
-  margin-bottom: 10px;
-  font-size: 1.5rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin: 10px 0 5px 0;
+  font-weight: normal;
+  text-align: center;
 }
 
 .song-selection-section p {
+  font-size: 0.7rem;
+  text-align: center;
   color: #666;
-  margin-bottom: 20px;
+  margin: 5px 0 15px 0;
+  line-height: 1.3;
 }
 
 .song-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 15px;
 }
 
 .song-card {
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 20px;
+  border: 1px solid #ddd;
+  padding: 12px;
+  background: white;
   position: relative;
-  border: 2px solid transparent;
-  transition: all 0.3s ease;
 }
 
 .song-card:hover {
-  border-color: #667eea;
-  transform: translateY(-2px);
+  border-color: #000;
 }
 
 .song-rank {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background: #667eea;
+  top: 8px;
+  right: 8px;
+  background: black;
   color: white;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 0.6rem;
+  padding: 2px 6px;
   font-weight: bold;
-  font-size: 0.9rem;
 }
 
 .song-image {
-  width: 100%;
-  height: 200px;
+  width: 60px;
+  height: 60px;
   object-fit: cover;
-  border-radius: 8px;
-  margin-bottom: 15px;
+  margin: 0 auto 8px auto;
+  display: block;
 }
 
 .song-card h3 {
-  margin: 0 0 8px 0;
-  color: #333;
-  font-size: 1.1rem;
+  font-size: 0.8rem;
+  margin: 5px 0;
+  font-weight: bold;
+  text-align: center;
 }
 
-.song-artist {
+.song-artist, .song-album, .song-genre, .song-popularity {
+  font-size: 0.6rem;
+  margin: 2px 0;
+  text-align: center;
   color: #666;
-  margin: 5px 0;
-  font-weight: 500;
-}
-
-.song-album {
-  color: #888;
-  margin: 5px 0;
-  font-size: 0.9rem;
-}
-
-.song-genre {
-  color: #667eea;
-  margin: 5px 0;
-  font-weight: 500;
-}
-
-.song-popularity {
-  color: #666;
-  margin: 5px 0;
-  font-size: 0.9rem;
 }
 
 .song-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 15px;
+  margin-top: 8px;
+  text-align: center;
 }
 
 .select-button {
-  flex: 1;
-  padding: 10px;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
+  padding: 6px 12px;
+  border: 1px solid #000;
+  background: white;
+  color: black;
+  border-radius: 0;
+  font-size: 0.6rem;
+  font-weight: normal;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.3s ease;
+  width: 100%;
 }
 
-.select-button.deposit {
-  background: #667eea;
+.select-button:hover {
+  background: black;
   color: white;
-}
-
-.select-button.deposit:hover {
-  background: #5a6fd8;
-}
-
-.select-button.receive {
-  background: #28a745;
-  color: white;
-}
-
-.select-button.receive:hover {
-  background: #218838;
 }
 
 .select-button.selected {
-  background: #333;
+  background: black;
   color: white;
 }
 
 .swap-actions {
+  margin: 15px 0;
   text-align: center;
-  margin-top: 20px;
 }
 
 .create-swap-button {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  padding: 12px 20px;
+  border: 1px solid #000;
+  background: black;
   color: white;
-  border: none;
-  padding: 15px 30px;
-  border-radius: 10px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  border-radius: 0;
+  font-size: 0.8rem;
+  font-weight: normal;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.3s ease;
+  width: 100%;
 }
 
 .create-swap-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  background: white;
+  color: black;
+}
+
+.recommendation-note {
+  margin: 10px 0;
+}
+
+.recommendation-note label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.recommendation-note textarea {
+  width: 100%;
+  border: 1px solid #ddd;
+  padding: 8px;
+  font-family: inherit;
+  font-size: 0.7rem;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.recommendation-note textarea:focus {
+  outline: none;
+  border-color: #000;
 }
 
 .print-container {
@@ -459,6 +491,67 @@
   align-items: center;
   justify-content: center;
   background: white;
+}
+
+.printing-message {
+  text-align: center;
+  padding: 30px 20px;
+}
+
+.printing-message h2 {
+  color: black;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: normal;
+  margin: 0;
+}
+
+.printing-message p {
+  color: #666;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin: 10px 0 0 0;
+}
+
+.thank-you-message {
+  text-align: center;
+  padding: 40px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.thank-you-message h2 {
+  color: black;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: normal;
+  margin: 0 0 20px 0;
+}
+
+.get-recommendation-button {
+  padding: 12px 20px;
+  border: 1px solid #000;
+  background: black;
+  color: white;
+  border-radius: 0;
+  font-size: 0.8rem;
+  font-weight: normal;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.get-recommendation-button:hover {
+  background: white;
+  color: black;
 }
 
 /* Print styles */
@@ -474,6 +567,7 @@
     max-width: none;
     width: 100%;
     height: 100%;
+    border: none;
   }
   
   .song-preview {
@@ -486,15 +580,11 @@
   .song-swap-container {
     padding: 20px;
     margin: 10px;
+    max-width: 100%;
   }
   
   .song-swap-header h1 {
-    font-size: 2rem;
-  }
-  
-  .song-info {
-    grid-template-columns: 1fr;
-    gap: 15px;
+    font-size: 1.3rem;
   }
   
   .print-button, .new-swap-button {
@@ -505,5 +595,9 @@
   .user-info {
     flex-direction: column;
     gap: 10px;
+  }
+  
+  .auth-buttons {
+    flex-direction: column;
   }
 } 

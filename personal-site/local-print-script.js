@@ -564,6 +564,8 @@ async function createAndPrintCard(printJob) {
 
       // Thank you and cut
       lines.push('\n', ALIGN_CENTER, toUpper('THANK YOU') + '\n', toUpper('COME AGAIN') + '\n');
+      lines.push(ALIGN_CENTER, toUpper(`COURTESY OF ${IG_HANDLE}`) + '\n');
+      lines.push(ALIGN_CENTER, toUpper('DM FOR MORE BANGERS') + '\n');
       lines.push(FEED(2), INIT, FULL_CUT_N3);
 
       const receiptBuffer = Buffer.from(lines.join(''), 'binary');
@@ -660,7 +662,7 @@ async function createAndPrintCard(printJob) {
 
     // QR caption + short URL, then QR
     const songUrlD = spotifyUriToUrl(depositedSong.uri || '');
-    lines.push(ALIGN_CENTER, toUpper(pickQrCaption()) + '\n', shortUrl(songUrlD) + '\n');
+    lines.push(ALIGN_CENTER, toUpper(pickQrCaption()) + '\n');
     lines.push(ALIGN_CENTER, buildEpsonQR(songUrlD), ALIGN_LEFT, '\n');
 
     // IG follow block
@@ -677,6 +679,8 @@ async function createAndPrintCard(printJob) {
 
     // Thank you and cut
     lines.push('\n', ALIGN_CENTER, toUpper('THANK YOU') + '\n', toUpper('COME AGAIN') + '\n');
+    lines.push(ALIGN_CENTER, toUpper(`COURTESY OF ${IG_HANDLE}`) + '\n');
+    lines.push(ALIGN_CENTER, toUpper('DM FOR MORE BANGERS') + '\n');
     // Ensure space before cut, re-init to clear modes, then single Epson cut with built-in feed
     lines.push(FEED(2), INIT, FULL_CUT_N3);
 

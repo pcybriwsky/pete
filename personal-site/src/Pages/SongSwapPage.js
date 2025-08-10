@@ -4,6 +4,7 @@ import { auth, functions, httpsCallable, db, collection, addDoc, query, where, g
 import { runTransaction } from 'firebase/firestore';
 import SongSwapSketch from './Components/SongSwap/SongSwapSketch';
 import './SongSwapPage.css';
+import BangersOnlyBank from '../Assets/Images/BangersOnlyBank.png';
 
 // Spotify API configuration
 let selectedSpotifyID = "26c47d5dba534624b1f3e93f5a7a3bd7";
@@ -24,6 +25,7 @@ const SongSwapPage = () => {
   const [selectedReceive, setSelectedReceive] = useState(null);
   const [songs, setSongs] = useState(null);
   const [recommendationNote, setRecommendationNote] = useState('');
+  const [depositCount, setDepositCount] = useState(0);
   
   // Debug: Log when songs state changes
   useEffect(() => {
@@ -34,6 +36,21 @@ const SongSwapPage = () => {
   const [printMode, setPrintMode] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [codeUsed, setCodeUsed] = useState(false);
+
+  // Fetch deposit count on component mount
+  useEffect(() => {
+    const fetchDepositCount = async () => {
+      try {
+        const songsQuery = query(collection(db, 'songs'));
+        const querySnapshot = await getDocs(songsQuery);
+        setDepositCount(querySnapshot.size);
+      } catch (error) {
+        console.error('Error fetching deposit count:', error);
+      }
+    };
+    
+    fetchDepositCount();
+  }, []);
 
 
 
@@ -121,7 +138,7 @@ const SongSwapPage = () => {
 
       // Prefer genres from selected deposit if available
       const seed = selectedDeposit?.allGenres || [];
-      const receivedSong = await getWeightedRandomSong(seed);
+      const receivedSong = await getWeightedRandomSong(seed, true);
 
       // Update UI preview
       setSongs((prev) => ({
@@ -218,21 +235,20 @@ const SongSwapPage = () => {
     const userData = await getUserData.json();
     setSpotifyUser(userData);
 
-    // Pull top 50 tracks and randomly choose one; enrich with artist genres
-    const top50Response = await fetch(
-      `https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=50`,
+    // Pull top 1 track and enrich with artist genres
+    const top1Response = await fetch(
+      `https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=1`,
       {
         method: "GET",
         headers: { 'Authorization': 'Bearer ' + data.access_token }
       }
     );
 
-    const top50Data = await top50Response.json();
-    console.log('Top 50 tracks response:', top50Data);
+    const top1Data = await top1Response.json();
+    console.log('Top 1 track response:', top1Data);
 
-    if (top50Data.items && top50Data.items.length > 0) {
-      const idx = Math.floor(Math.random() * top50Data.items.length);
-      const track = top50Data.items[idx];
+    if (top1Data.items && top1Data.items.length > 0) {
+      const track = top1Data.items[0];
       const artistId = track.artists?.[0]?.id;
 
       let artistGenres = [];
@@ -256,11 +272,11 @@ const SongSwapPage = () => {
         popularity: track.popularity,
         duration: track.duration_ms,
         releaseDate: track.album?.release_date || null,
-        rank: idx + 1,
+        rank: 1,
         source: 'spotify'
       };
 
-      // Auto-select deposit with this random top-50 choice
+      // Auto-select deposit with the top 1 choice
       setSelectedDeposit(topSong);
       setTopSongs([topSong]);
     }
@@ -521,7 +537,7 @@ const SongSwapPage = () => {
         await updateDoc(docRef, { depositNumber });
 
         // Get a recommendation preferring matching genres
-        const receivedSong = await getWeightedRandomSong(selectedDeposit.allGenres || []);
+        const receivedSong = await getWeightedRandomSong(selectedDeposit.allGenres || [], true);
         
         console.log('Creating swap with:', {
           deposited: selectedDeposit,
@@ -589,7 +605,20 @@ const SongSwapPage = () => {
         console.log('Firebase Function result:', result);
 
         // Show success message
-        alert('🎵 Song swap created and print job sent!');
+        setSongs({
+          deposited: {
+            ...selectedDeposit,
+            submittedByName: spotifyUser?.display_name || 'Guest User',
+            submittedById: spotifyUser?.id || null,
+            recommendation: recommendationNote || '',
+            depositNumber
+          },
+          received: receivedSong,
+          status: 'thank-you'
+        });
+        
+        // Update deposit count
+        setDepositCount(prev => prev + 1);
         
       } catch (error) {
         console.error('Error creating swap:', error);
@@ -599,7 +628,7 @@ const SongSwapPage = () => {
   };
 
   // Function to get weighted random song from Firebase, preferring genre overlap
-  const getWeightedRandomSong = async (seedGenres = []) => {
+  const getWeightedRandomSong = async (seedGenres = [], excludeRecentDeposit = true) => {
     try {
       const songsQuery = query(collection(db, 'songs'));
       const querySnapshot = await getDocs(songsQuery);
@@ -614,15 +643,31 @@ const SongSwapPage = () => {
         songs.push({ id: docSnap.id, ...docSnap.data() });
       });
 
+      // Find the highest deposit number to exclude the most recent
+      const maxDepositNumber = Math.max(...songs.map(s => s.depositNumber || 0));
+      
+      // Filter out the most recent deposit if requested
+      let filteredSongs = songs;
+      if (excludeRecentDeposit && maxDepositNumber > 0) {
+        filteredSongs = songs.filter(s => (s.depositNumber || 0) < maxDepositNumber);
+        console.log(`Excluding most recent deposit (#${maxDepositNumber}), ${filteredSongs.length} songs remaining`);
+      }
+      
+      // If no songs left after filtering, use all songs
+      if (filteredSongs.length === 0) {
+        console.log('No songs available after filtering, using all songs');
+        filteredSongs = songs;
+      }
+
       const lower = (arr = []) => arr.map(g => String(g).toLowerCase());
       const seed = lower(seedGenres);
       const overlap = (a, b) => a.some(g => b.includes(g));
 
       const genreCandidates = seed.length
-        ? songs.filter(s => overlap(seed, lower(s.allGenres || [])))
-        : songs;
+        ? filteredSongs.filter(s => overlap(seed, lower(s.allGenres || [])))
+        : filteredSongs;
 
-      const pool = genreCandidates.length ? genreCandidates : songs;
+      const pool = genreCandidates.length ? genreCandidates : filteredSongs;
 
       const weightedPool = pool.map(song => ({
         ...song,
@@ -679,8 +724,14 @@ const SongSwapPage = () => {
     <div className="song-swap-page">
       <div className="song-swap-container">
         <header className="song-swap-header">
-          <h1>🎵 Song Swap</h1>
-          <p>Tap your NFC tag to swap songs with strangers</p>
+          <div className="logo-container">
+            <img src={BangersOnlyBank} alt="Bangers Only Bank" />
+          </div>
+          
+          <div className="deposit-counter">
+            <span className="counter-label">Bangers Deposited</span>
+            <span className="counter-number">{depositCount.toString().padStart(3, '0')}</span>
+          </div>
         </header>
 
         {!spotifyUser ? (
@@ -716,79 +767,25 @@ const SongSwapPage = () => {
           </div>
         ) : (
           <div className="user-section">
-            <div className="user-info">
-              <p>Welcome, {spotifyUser?.display_name || 'Music Lover'}!</p>
-              <button className="sign-out-button" onClick={() => {
-                setSpotifyUser(null);
-                setTopSongs(null);
-                setSelectedDeposit(null);
-                setSelectedReceive(null);
-                setSongs(null);
-              }}>
-                Sign Out
-              </button>
-            </div>
-
             {songs ? (
               <div className="songs-section">
-                <div className="song-preview">
-                  <SongSwapSketch songs={songs} />
-                </div>
-                <div className="song-info">
-                  <div className="song-details">
-                    <h3>Your Deposited Song</h3>
-                    <p><strong>{songs.deposited.title}</strong></p>
-                    <p>by {songs.deposited.artist}</p>
-                    <p>from {songs.deposited.album}</p>
-                    <p>Genre: {songs.deposited.genre}</p>
-                    {songs.deposited.depositNumber && (
-                      <p>Deposit #: {songs.deposited.depositNumber}</p>
-                    )}
-                    <p>Deposited by: {songs.deposited.submittedByName || (spotifyUser?.display_name || 'Guest User')}</p>
-                    {songs.deposited.recommendation && (
-                      <p>Why: “{songs.deposited.recommendation}”</p>
-                    )}
-                    <p>Popularity: {songs.deposited.popularity}/100</p>
-                    <p>Release Date: {songs.deposited.releaseDate}</p>
-                    <p>Duration: {Math.round(songs.deposited.duration / 1000 / 60)}:{String(Math.round((songs.deposited.duration / 1000) % 60)).padStart(2, '0')}</p>
-                    {songs.deposited.allGenres && songs.deposited.allGenres.length > 1 && (
-                      <p>All Genres: {songs.deposited.allGenres.join(', ')}</p>
-                    )}
+                {songs.status === 'thank-you' ? (
+                  <div className="thank-you-message">
+                    <h2>Thank you</h2>
+                    <button className="get-recommendation-button" onClick={handleImmediateRecommendationPrint}>
+                      Get Recommendation
+                    </button>
                   </div>
-                  <div className="song-details">
-                    <h3>Your Received Song</h3>
-                    <p><strong>{songs.received.title}</strong></p>
-                    <p>by {songs.received.artist}</p>
-                    <p>from {songs.received.album}</p>
-                    <p>Genre: {songs.received.genre}</p>
-                    {songs.received.depositNumber && (
-                      <p>Sender Deposit #: {songs.received.depositNumber}</p>
-                    )}
-                    {songs.received.submittedByName && (
-                      <p>From: {songs.received.submittedByName}</p>
-                    )}
-                    {songs.received.recommendation && (
-                      <p>Their note: “{songs.received.recommendation}”</p>
-                    )}
-                    <p>Popularity: {songs.received.popularity}/100</p>
-                    <p>Release Date: {songs.received.releaseDate}</p>
-                    <p>Duration: {Math.round(songs.received.duration / 1000 / 60)}:{String(Math.round((songs.received.duration / 1000) % 60)).padStart(2, '0')}</p>
-                    {songs.received.allGenres && songs.received.allGenres.length > 1 && (
-                      <p>All Genres: {songs.received.allGenres.join(', ')}</p>
-                    )}
-                  </div>
-                </div>
-                <button className="print-button" onClick={handlePrint}>
-                  🖨️ Print Card
-                </button>
-                <button className="new-swap-button" onClick={handleNewSwap}>
-                  🔄 New Swap
-                </button>
+                ) : null}
               </div>
             ) : topSongs ? (
               <div className="song-selection-section">
+                <div className="user-info">
+                  <p>Hello, {spotifyUser?.display_name || 'Music Lover'}!</p>
+                  <p>Thanks for banking with us</p>
+                </div>
+                
                 <h2>Your All‑Time #1 — Ready to Deposit</h2>
-                <p>We pulled your top Spotify track of all time. Leave a short note about why you love it, and you'll receive a recommendation in return.</p>
               
                 <div className="song-grid">
                   {topSongs.map((song, index) => (
@@ -801,16 +798,6 @@ const SongSwapPage = () => {
                       <p className="song-artist">{song.artist}</p>
                       <p className="song-album">{song.album}</p>
                       <p className="song-genre">{song.genre}</p>
-                      <p className="song-popularity">Popularity: {song.popularity}/100</p>
-                      
-                      <div className="song-actions">
-                        <button 
-                          className={`select-button deposit ${selectedDeposit?.uri === song.uri ? 'selected' : ''}`}
-                          onClick={() => handleSelectDeposit(song)}
-                        >
-                          {selectedDeposit?.uri === song.uri ? '✓ Selected for Deposit' : 'Select for Deposit'}
-                        </button>
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -829,7 +816,7 @@ const SongSwapPage = () => {
                 {selectedDeposit && (
                   <div className="swap-actions">
                     <button className="create-swap-button" onClick={handleCreateSwap}>
-                      🎵 Deposit Song & Get Recommendation
+                      Deposit Song
                     </button>
                   </div>
                 )}
