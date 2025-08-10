@@ -25,8 +25,8 @@ const Gradient = (p) => {
   let MAX_PATH_POINTS = 300; // Now controlled by slider
   let currentX, currentY;
   let targetX, targetY;
-  let LERP_FACTOR = 0.1; // Now controlled by slider
-  let SIZE_SCALE_FACTOR = 0.1; // Now controlled by slider
+  let LERP_FACTOR = 0.07; // Now controlled by slider
+  let SIZE_SCALE_FACTOR = 0.3; // Now controlled by slider
 
   // --- Equation Mode Variables ---
   let equationType = 'lissajous';
@@ -63,6 +63,13 @@ const Gradient = (p) => {
   let equationParams = getDefaultEquationParams();
   let squiggleXOff = 1000 * Math.random();
   let squiggleYOff = 2000 * Math.random();
+  
+  // --- Equation Transition Variables ---
+  let prevEquationType = 'lissajous';
+  let prevEquationParams = getDefaultEquationParams();
+  let equationTransitionProgress = 1; // 0..1, 1 = no transition
+  let equationTransitionSpeed = 0.02; // per frame increment
+  let isTransitioningEquations = false;
 
   // --- Ambient Mode Variables ---
   const AMBIENT_ENABLED = true;
@@ -98,8 +105,8 @@ const Gradient = (p) => {
   // --- Auto-transition Variables ---
   let lastAutoPaletteSwitchAtMs = 0;
   let lastAutoEquationSwitchAtMs = 0;
-  let autoPaletteSwitchMs = 5000; // auto palette switch every 5s
-  let autoEquationSwitchMs = 10000; // auto equation switch every 10s
+  let autoPaletteSwitchMs = 20000; // auto palette switch every 5s
+  let autoEquationSwitchMs = 40000; // auto equation switch every 10s
   
   // --- Sensor Threshold Variables ---
   let sensorThreshold = 5; // degrees of change to trigger sensor mode
@@ -228,6 +235,31 @@ const Gradient = (p) => {
       default:
         return { x: 0, y: 0 };
     }
+  };
+
+  // Helper to start equation transition
+  const startEquationTransition = (newType, newParams) => {
+    prevEquationType = equationType;
+    prevEquationParams = { ...equationParams };
+    equationType = newType;
+    equationParams = { ...newParams };
+    equationTransitionProgress = 0;
+    isTransitioningEquations = true;
+  };
+
+  // Helper to get blended equation point during transition
+  const getBlendedEquationPoint = (time) => {
+    if (equationTransitionProgress >= 1) {
+      return getEquationPoint(time, equationType, equationParams);
+    }
+    
+    const prevPoint = getEquationPoint(time, prevEquationType, prevEquationParams);
+    const currentPoint = getEquationPoint(time, equationType, equationParams);
+    
+    return {
+      x: p.lerp(prevPoint.x, currentPoint.x, equationTransitionProgress),
+      y: p.lerp(prevPoint.y, currentPoint.y, equationTransitionProgress)
+    };
   };
 
   // Narrow ambient parameter ranges (tasteful defaults)
@@ -468,6 +500,9 @@ const Gradient = (p) => {
         sensorModeTriggered = false; // Reset sensor trigger
         t = 0;
         path = [{ x: currentX, y: currentY }];
+        // Reset transition state when entering equation mode
+        equationTransitionProgress = 1;
+        isTransitioningEquations = false;
         equationBtn.style('background-color', '#007bff');
         equationBtn.style('color', 'white');
       };
@@ -935,6 +970,9 @@ const Gradient = (p) => {
         if (controlMode === 'equation') {
           t = 0;
           path = [{ x: currentX, y: currentY }];
+          // Reset transition state when entering equation mode
+          equationTransitionProgress = 1;
+          isTransitioningEquations = false;
           if (equationControlsContainer) equationControlsContainer.style('display', 'block');
         } else if (equationControlsContainer) {
           equationControlsContainer.style('display', 'none');
@@ -963,13 +1001,15 @@ const Gradient = (p) => {
       equationSelect.option('Archimedean Spiral', 'arch_spiral');
       equationSelect.selected(equationType);
       equationSelect.changed(() => {
-        equationType = equationSelect.value();
-        t = 0;
-        path = [{ x: currentX, y: currentY }];
-        // Reset squiggle offsets for a fresh path
-        if (equationType === 'squiggle') {
-          squiggleXOff = 1000 * Math.random();
-          squiggleYOff = 2000 * Math.random();
+        const newType = equationSelect.value();
+        if (newType !== equationType) {
+          // Start transition instead of resetting
+          startEquationTransition(newType, equationParams);
+          // Reset squiggle offsets for a fresh path
+          if (newType === 'squiggle') {
+            squiggleXOff = 1000 * Math.random();
+            squiggleYOff = 2000 * Math.random();
+          }
         }
         buildEquationParamSliders();
       });
@@ -1155,9 +1195,10 @@ const Gradient = (p) => {
     sel.option('Archimedean Spiral', 'arch_spiral');
     sel.selected(equationType);
     sel.changed(() => {
-      equationType = sel.value();
-      t = 0;
-      path = [{ x: currentX, y: currentY }];
+      const newType = sel.value();
+      if (newType !== equationType) {
+        startEquationTransition(newType, equationParams);
+      }
     });
     p.createSpan(' Speed ').parent(eqBlock);
     const sp = p.createSlider(0.001, 0.2, dt, 0.001);
@@ -1225,7 +1266,7 @@ const Gradient = (p) => {
     p.noStroke();
     p.rect(0, 0, p.width, p.height);
     p.pop();
-    // p.clear();
+    p.clear();
 
     // Update variables from controls if they're showing
     if (showControls && controlPanel) {
@@ -1283,15 +1324,19 @@ const Gradient = (p) => {
 
 
     // --- Update Target Position based on control mode ---
+    const padding = Math.max(p.width, p.height) * 0.1; // 10% padding on all sides
+    const safeWidth = p.width - (padding * 2);
+    const safeHeight = p.height - (padding * 2);
+    
     switch (controlMode) {
       case 'mouse':
         // Use touch position on mobile, mouse position on desktop
         if (isMobileDevice && isTouching) {
-          targetX = touchX;
-          targetY = touchY;
+          targetX = p.constrain(touchX, padding, p.width - padding);
+          targetY = p.constrain(touchY, padding, p.height - padding);
         } else {
-          targetX = p.mouseX;
-          targetY = p.mouseY;
+          targetX = p.constrain(p.mouseX, padding, p.width - padding);
+          targetY = p.constrain(p.mouseY, padding, p.height - padding);
         }
         break;
       case 'magic_orientation':
@@ -1300,23 +1345,23 @@ const Gradient = (p) => {
           let invertY = -1;
           let rotY = magic.modules.imu.orientation.w * invertX;
           let rotW = magic.modules.imu.orientation.y * invertY;
-          targetX = p.map(-rotW, -0.3, 0.3, 0, p.width, true);
-          targetY = p.map(-rotY, -0.3, 0.3, 0, p.height, true);
+          targetX = p.constrain(p.map(-rotW, -0.3, 0.3, padding, p.width - padding, true), padding, p.width - padding);
+          targetY = p.constrain(p.map(-rotY, -0.3, 0.3, padding, p.height - padding, true), padding, p.height - padding);
         }
         break;
       case 'device_orientation':
         if (hasDeviceOrientation) {
           // Map gamma (-90 to 90) to width
-          targetX = p.map(deviceOrientationData.gamma, -45, 45, 0, p.width, true);
+          targetX = p.constrain(p.map(deviceOrientationData.gamma, -45, 45, padding, p.width - padding, true), padding, p.width - padding);
           // Map beta (-180 to 180) to height, focusing on the -90 to 90 range for better control
-          targetY = p.map(deviceOrientationData.beta, -45, 45, 0, p.height, true);
+          targetY = p.constrain(p.map(deviceOrientationData.beta, -45, 45, padding, p.height - padding, true), padding, p.height - padding);
         }
         break;
       case 'joystick':
         if (magic.modules.joystick) {
           const joy = magic.modules.joystick;
-          targetX = p.map(joy.x, -1, 1, 0, p.width, true);
-          targetY = p.map(joy.y, -1, 1, 0, p.height, true);
+          targetX = p.constrain(p.map(joy.x, -1, 1, padding, p.width - padding, true), padding, p.width - padding);
+          targetY = p.constrain(p.map(joy.y, -1, 1, padding, p.height - padding, true), padding, p.height - padding);
         }
         break;
       case 'equation': {
@@ -1333,11 +1378,12 @@ const Gradient = (p) => {
           dt = equationDtSlider.value();
         }
 
-        const pt = getEquationPoint(t, equationType, equationParams);
+        // Use blended equation point during transitions
+        const pt = getBlendedEquationPoint(t);
         const xNorm = clamp(pt.x, -1, 1);
         const yNorm = clamp(pt.y, -1, 1);
-        targetX = p.width * (0.5 + 0.45 * xNorm);
-        targetY = p.height * (0.5 + 0.45 * yNorm);
+        targetX = p.width * (0.5 + 0.35 * xNorm); // Reduced from 0.45 to 0.4 (0.9 * 0.45 ≈ 0.4)
+        targetY = p.height * (0.5 + 0.35 * yNorm);
         t += dt;
         break;
       }
@@ -1439,38 +1485,37 @@ const Gradient = (p) => {
       ambientStartedAtMs = nowMs;
     }
 
-    // --- Auto-transitions (both ambient and regular mode) ---
-    if (nowMs - lastAutoPaletteSwitchAtMs >= autoPaletteSwitchMs) {
-      const paletteNames = Object.keys(palettes);
-      const randomPaletteName = paletteNames[Math.floor(p.random(paletteNames.length))];
-      const randomPalette = palettes[randomPaletteName];
-      const newColors = Object.values(randomPalette).map(c => c.startsWith('#') ? c : `#${c}`);
-      startPaletteTransition(newColors);
-      lastAutoPaletteSwitchAtMs = nowMs;
-      console.log("Auto palette transition:", randomPaletteName);
-    }
-    
-    if (nowMs - lastAutoEquationSwitchAtMs >= autoEquationSwitchMs) {
-      if (controlMode === 'equation') {
-        const equationTypes = ['lissajous', 'squiggle', 'wave_sweep', 'rose', 'hypotrochoid', 'epitrochoid', 'lemniscate', 'arch_spiral'];
-        const randomEquationType = equationTypes[Math.floor(p.random(equationTypes.length))];
-        equationType = randomEquationType;
-        equationParams = randomAmbientParamsFor(equationType);
-        t = 0;
-        path = [{ x: currentX, y: currentY }];
-        console.log("Auto equation transition:", randomEquationType);
+    // --- Auto-transitions (only when NOT in ambient mode) ---
+    if (!isAmbient) {
+      if (nowMs - lastAutoPaletteSwitchAtMs >= autoPaletteSwitchMs) {
+        const paletteNames = Object.keys(palettes);
+        const randomPaletteName = paletteNames[Math.floor(p.random(paletteNames.length))];
+        const randomPalette = palettes[randomPaletteName];
+        const newColors = Object.values(randomPalette).map(c => c.startsWith('#') ? c : `#${c}`);
+        startPaletteTransition(newColors);
+        lastAutoPaletteSwitchAtMs = nowMs;
+        console.log("Auto palette transition:", randomPaletteName);
       }
-      lastAutoEquationSwitchAtMs = nowMs;
+      
+      if (nowMs - lastAutoEquationSwitchAtMs >= autoEquationSwitchMs) {
+        if (controlMode === 'equation') {
+          const equationTypes = ['lissajous', 'squiggle', 'wave_sweep', 'rose', 'hypotrochoid', 'epitrochoid', 'lemniscate', 'arch_spiral'];
+          const randomEquationType = equationTypes[Math.floor(p.random(equationTypes.length))];
+          const newParams = randomAmbientParamsFor(randomEquationType);
+          startEquationTransition(randomEquationType, newParams);
+          console.log("Auto equation transition:", randomEquationType);
+        }
+        lastAutoEquationSwitchAtMs = nowMs;
+      }
     }
     
     if (isAmbient) {
       // Rotate equation
       if (nowMs - lastEquationSwitchAtMs >= ambientEquationSwitchMs) {
         ambientEquationIndex = (ambientEquationIndex + 1) % ambientEquationOrder.length;
-        equationType = ambientEquationOrder[ambientEquationIndex];
-        equationParams = randomAmbientParamsFor(equationType);
-        t = 0;
-        path = [{ x: currentX, y: currentY }];
+        const newType = ambientEquationOrder[ambientEquationIndex];
+        const newParams = randomAmbientParamsFor(newType);
+        startEquationTransition(newType, newParams);
         lastEquationSwitchAtMs = nowMs;
       }
       // Rotate palette
@@ -1491,6 +1536,14 @@ const Gradient = (p) => {
     // Advance crossfade progress
     if (paletteTransitionProgress < 1) {
       paletteTransitionProgress = Math.min(1, paletteTransitionProgress + paletteFadeSpeed);
+    }
+    
+    // Advance equation transition progress
+    if (equationTransitionProgress < 1) {
+      equationTransitionProgress = Math.min(1, equationTransitionProgress + equationTransitionSpeed);
+      if (equationTransitionProgress >= 1) {
+        isTransitioningEquations = false;
+      }
     }
 
     // --- Smoothly Update Current Position ---
@@ -1599,7 +1652,7 @@ const Gradient = (p) => {
     if (noiseTexture) {
       p.push();
       p.blendMode(p.SCREEN);
-      p.image(noiseTexture, 0, 0);
+      // p.image(noiseTexture, 0, 0);
       p.pop();
     }
   };
@@ -1658,6 +1711,9 @@ const Gradient = (p) => {
     if (p.key === 'c' || p.key === 'C') {
       t = 0;
       path = [{ x: currentX, y: currentY }];
+      // Reset transition state when clearing
+      equationTransitionProgress = 1;
+      isTransitioningEquations = false;
       console.log("Cleared trail");
     }
   };

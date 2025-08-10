@@ -12,7 +12,7 @@ const Blocks = (p) => {
   let currentPaletteName = '';
   let showPaletteName = false;
   let paletteIndex = 0;
-  let mode = 'mouse'; // 'random', 'mouse', 'device', or 'thermal'
+  let mode = 'mouse'; // 'random', 'mouse', 'device', 'thermal', or 'static'
   let maxHeight = 1000; // Maximum height for blocks
   let mouseInfluenceRadius = 1000; // How far the mouse influence extends
   let border = false;
@@ -193,6 +193,10 @@ const Blocks = (p) => {
         if (mode === 'random') {
           nX = multiplier * p.noise(x, y, p.frameCount*frameMultiplier);
           nY = multiplier * p.noise(y + x, x, p.frameCount*frameMultiplier + 100);
+        } else if (mode === 'static') {
+          // Static mode: no movement, just static noise field
+          nX = 0;
+          nY = 0;
         } else {
           nX = 0;
           nY = 0;
@@ -241,6 +245,10 @@ const Blocks = (p) => {
   const calculateHeight = (x, y, frameMultiplier, inc) => {
     if (mode === 'random') {
       return p.noise(x * 0.0001, y * frameMultiplier * 10, p.frameCount * frameMultiplier * 10) * maxHeight * heightMultiplier;
+    } else if (mode === 'static') {
+      // Static mode: use Perlin noise with fixed seed for consistent elevation field
+      // Height range: 0 to 0.5 of maxHeight
+      return p.noise(x * 0.00085, y * 0.00085, 0) * maxHeight * heightMultiplier * 3;
     } else if (mode === 'thermal' && isMagic && magic.modules.imu?.thermal?.raw?.pixel_temperatures) {
       // Get thermal data
       const thermalData = magic.modules.imu.thermal.raw.pixel_temperatures;
@@ -489,13 +497,15 @@ const Blocks = (p) => {
       // }
     }
     if (p.key === 'm' || p.key === 'M') {
-      // Cycle through modes: random -> mouse -> device -> thermal -> random ...
+      // Cycle through modes: random -> mouse -> device -> thermal -> static -> random ...
       if (mode === 'random') {
         mode = 'mouse';
       } else if (mode === 'mouse') {
         mode = 'device';
       } else if (mode === 'device') {
         mode = 'thermal';
+      } else if (mode === 'thermal') {
+        mode = 'static';
       } else {
         mode = 'random';
       }
@@ -666,6 +676,12 @@ const Blocks = (p) => {
       { text: 'Toggle Mode', key: 'M', action: () => {
         if (mode === 'random') {
           mode = 'mouse';
+        } else if (mode === 'mouse') {
+          mode = 'device';
+        } else if (mode === 'device') {
+          mode = 'thermal';
+        } else if (mode === 'thermal') {
+          mode = 'static';
         } else {
           mode = 'random';
         }
